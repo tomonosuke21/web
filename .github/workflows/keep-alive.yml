@@ -3,7 +3,7 @@ name: keep-supabase-alive
 on:
   schedule:
     - cron: "0 3 */3 * *"   # 3日おきの午前3時(UTC)
-  workflow_dispatch:         # 手動でも実行できる
+  workflow_dispatch:
 
 jobs:
   ping:
@@ -13,10 +13,5 @@ jobs:
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          URL="https://pgwqcwpdukhwilxlgnqg.supabase.co/rest/v1/results?select=id&limit=1"
-          echo "使うURL: $URL"
-          echo "KEYの長さ: ${#SUPABASE_KEY}"
-          echo "KEYの先頭15文字: ${SUPABASE_KEY:0:15}"
           KEY=$(echo "$SUPABASE_KEY" | tr -d '[:space:]"')
-          echo "整えたKEYの長さ: ${#KEY}"
-          curl -sS --fail-with-body "$URL" -H "apikey: $KEY"
+          curl -sS --fail "https://pgwqcwpdukhwilxlgnqg.supabase.co/rest/v1/results?select=id&limit=1" -H "apikey: $KEY"
