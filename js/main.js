@@ -1,46 +1,56 @@
-// ① 画面の部品を、idで探して変数に入れる
 const codeBox = document.getElementById("code");
 const runButton = document.getElementById("run");
 const statusText = document.getElementById("status");
 const output = document.getElementById("output");
 
-// ② Pyodideを入れておく変数(最初は空)
-let pyodide = null;
+const TIME_LIMIT_MS = 5000; // 制限時間(5秒)
+const MAX_OUTPUT = 10000;   // 画面に出す文字数の上限
 
-// ③ 準備する関数:Pyodideを読み込んで、出力先を設定する
-async function setup() {
-  pyodide = await loadPyodide();
+let worker = null;  // 今動いているWorker
+let timerId = null; // 時間切れ用タイマーの番号
 
-  // print の出力を、画面の output に追加する
-  pyodide.setStdout({
-    batched: (line) => {
-      output.textContent += line + "\n";
-    },
-  });
-
-  // エラー出力も同じ場所に出す
-  pyodide.setStderr({
-    batched: (line) => {
-      output.textContent += line + "\n";
-    },
-  });
-
-  statusText.textContent = "準備できました!";
-  runButton.disabled = false; // ボタンを押せるようにする
-}
-
-// ④ 実行する関数:テキストエリアのコードをPythonで動かす
-async function runCode() {
-  output.textContent = ""; // 前の出力を消す
-  try {
-    await pyodide.runPythonAsync(codeBox.value);
-  } catch (error) {
-    output.textContent += error.message; // Pythonのエラーを表示
+// 出力欄に1行追加する(上限を超えたら追加しない)
+function addOutput(text) {
+  if (output.textContent.length < MAX_OUTPUT) {
+    output.textContent += text + "\n";
   }
 }
 
-// ⑤ ボタンが押されたら runCode を動かす
-runButton.addEventListener("click", runCode);
+// Workerを作る(作り直しもこの関数でやる)
+function createWorker() {
+  runButton.disabled = true;
+  statusText.textContent = "Pythonを準備中…";
 
-// ⑥ ページを開いたら、すぐ準備を始める
-setup();
+  worker = new Worker("js/worker.js");
+
+  worker.onmessage = (event) => {
+    const message = event.data;
+
+    if (message.type === "ready") {
+      statusText.textContent = "準備できました!";
+      runButton.disabled = false;
+    } else if (message.type === "stdout" || message.type === "error") {
+      addOutput(message.text);
+    } else if (message.type === "done") {
+      clearTimeout(timerId); // 時間内に終わったので、タイマーを解除
+      runButton.disabled = false;
+    }
+  };
+}
+
+// 時間切れ:Workerを強制終了して、作り直す
+function handleTimeout() {
+  worker.terminate();
+  addOutput("時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。実行を止めました。");
+  createWorker();
+}
+
+// 実行ボタン
+runButton.addEventListener("click", () => {
+  output.textContent = "";
+  runButton.disabled = true;
+  timerId = setTimeout(handleTimeout, TIME_LIMIT_MS);
+  worker.postMessage({ type: "run", code: codeBox.value });
+});
+
+createWorker();
