@@ -2,9 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>テスト</title>
+  <title>Pythonを動かそう</title>
+  <!-- Pyodide本体を読み込む(バージョン固定) -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
 </head>
 <body>
-  <h1>Hello, GitHub Pages!GitHub Pages!<h1>
+  <h1>Python実行テスト</h1>
+
+  <textarea id="code" rows="8" cols="50">print("hello")</textarea>
+  <br>
+  <button id="run" disabled>実行</button>
+  <p id="status">Pythonを準備中…</p>
+
+  <pre id="output"></pre>
+
+  <!-- 自分で書くJavaScript。必ずHTMLの最後に置く -->
+  <script src="js/main.js"></script>
 </body>
 </html>
