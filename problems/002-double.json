@@ -1,0 +1,9 @@
+{
+  "id": "002-double",
+  "title": "2倍にしよう",
+  "statement": "整数を1つ読み込んで、2倍にした値を表示してください。",
+  "tests": [
+    { "input": "5", "expected": "10" },
+    { "input": "21", "expected": "42" }
+  ]
+}

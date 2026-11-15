@@ -3,18 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <title>Pythonを動かそう</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
 </head>
 <body>
-  <h1>Python実行テスト</h1>
+  <h1>Python学習</h1>
+
+  <div>
+    <button id="login">GitHubでログイン</button>
+    <button id="logout" hidden>ログアウト</button>
+    <span id="user"></span>
+  </div>
+
+  <select id="problem-select"></select>
+  <h2 id="problem-title"></h2>
+  <p id="problem-statement"></p>
 
   <textarea id="code" rows="8" cols="50">print("hello")</textarea>
   <br>
   <button id="run" disabled>実行</button>
+  <button id="grade" disabled>採点</button>
   <p id="status">Pythonを準備中…</p>
+  <p id="result"></p>
 
   <pre id="output"></pre>
 
-  <!-- 自分で書くJavaScript。必ずHTMLの最後に置く -->
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,8 @@
+{
+  "id": "001-hello",
+  "title": "hello を表示しよう",
+  "statement": "画面に hello と表示するプログラムを書いてください。",
+  "tests": [
+    { "input": "", "expected": "hello" }
+  ]
+}
