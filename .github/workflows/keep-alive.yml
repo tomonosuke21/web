@@ -11,13 +11,12 @@ jobs:
     steps:
       - name: Supabaseにアクセスする
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
-            echo "Secretが空です。名前と値を確認してください。"
-            exit 1
-          fi
-          URL=$(echo "$SUPABASE_URL" | tr -d '[:space:]"' | sed 's:/*$::')
+          URL="https://pgwqcwpdukhwilxlgnqg.supabase.co/rest/v1/results?select=id&limit=1"
+          echo "使うURL: $URL"
+          echo "KEYの長さ: ${#SUPABASE_KEY}"
+          echo "KEYの先頭15文字: ${SUPABASE_KEY:0:15}"
           KEY=$(echo "$SUPABASE_KEY" | tr -d '[:space:]"')
-          curl -sS --fail "$URL/rest/v1/results?select=id&limit=1" -H "apikey: $KEY"
+          echo "整えたKEYの長さ: ${#KEY}"
+          curl -sS --fail-with-body "$URL" -H "apikey: $KEY"
