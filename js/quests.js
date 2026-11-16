@@ -3,6 +3,17 @@ const questList = document.getElementById("quest-list");
 const LANGUAGE_LABELS = { python: "Python", javascript: "JavaScript" };
 const KIND_LABELS = { study: "スタディ", fill: "穴埋めテスト", problem: "練習問題" };
 
+// 自分がクリアしたステージのIDを返す(ログインしていなければ空)
+async function fetchDoneStageIds() {
+  if (currentUser === null) return new Set();
+  const { data, error } = await db.from("stage_progress").select("stage_id");
+  if (error) {
+    console.error(error);
+    return new Set();
+  }
+  return new Set(data.map((row) => row.stage_id));
+}
+
 // クエスト1件ぶんのカードを作る
 function createQuestCard(quest) {
   const card = document.createElement("section");
@@ -25,7 +36,6 @@ function createQuestCard(quest) {
   stageList.hidden = true;
 
   button.addEventListener("click", async () => {
-    // 開いているときは、閉じるだけ
     if (!stageList.hidden) {
       stageList.hidden = true;
       return;
@@ -37,6 +47,7 @@ function createQuestCard(quest) {
       .select("id, position, kind, title")
       .eq("quest_id", quest.id)
       .order("position");
+    const doneIds = await fetchDoneStageIds();
     button.disabled = false;
 
     stageList.textContent = "";
@@ -46,7 +57,10 @@ function createQuestCard(quest) {
     } else {
       for (const stage of data) {
         const item = document.createElement("li");
-        item.textContent = KIND_LABELS[stage.kind] + ": " + stage.title;
+        const link = document.createElement("a");
+        link.href = "stage.html?id=" + stage.id;
+        link.textContent = KIND_LABELS[stage.kind] + ": " + stage.title;
+        item.append(doneIds.has(stage.id) ? "✅ " : "", link);
         stageList.appendChild(item);
       }
     }
