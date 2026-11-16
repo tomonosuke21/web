@@ -90,3 +90,35 @@ async function gradeCode(runner, code, tests) {
     messages: messages,
   };
 }
+
+// Pyodide標準のastモジュールでPythonコードの構造を解析する。
+async function analyzePython(runner, code) {
+  // JSON文字列を安全にPython文字列として渡す
+  const payload = JSON.stringify(code);
+  const analysisCode = `import ast, json\nsource = json.loads(${JSON.stringify(payload)})\ntree = ast.parse(source)\nitems = set()\nfor node in ast.walk(tree):\n    kind = type(node).__name__\n    if kind in {'For','AsyncFor','While','If','IfExp','FunctionDef','AsyncFunctionDef','ClassDef','ListComp','SetComp','DictComp','GeneratorExp','Try','With','Lambda','Return','Break','Continue'}:\n        items.add(('syntax', kind))\n    if isinstance(node, ast.Call):\n        name = node.func.id if isinstance(node.func, ast.Name) else (node.func.attr if isinstance(node.func, ast.Attribute) else '')\n        if name: items.add(('call', name))\n    if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):\n        items.add(('variable', node.id))\n    if isinstance(node, ast.operator): items.add(('operator', type(node).__name__))\nprint(json.dumps([{'type': a, 'name': b} for a,b in sorted(items)]))`;
+  const result = await runner.run(analysisCode, '');
+  if (result.hasError || result.timedOut) throw new Error(result.lines.join('\n') || 'コードを解析できませんでした');
+  try { return JSON.parse(result.lines.join('\n')); }
+  catch { throw new Error('構文解析の結果を読み取れませんでした'); }
+}
+
+async function gradeCodeWithRules(runner, code, tests, requirements) {
+  const base = await gradeCode(runner, code, tests);
+  const messages = [...base.messages];
+  let rulesPassed = true;
+  if (requirements && requirements.length) {
+    try {
+      const found = await analyzePython(runner, code);
+      const keys = new Set(found.map(x => x.type + ':' + x.name));
+      const missing = requirements.filter(x => !keys.has(x.type + ':' + x.name));
+      if (missing.length) {
+        rulesPassed = false;
+        messages.push('構文・内容: ❌ 必須条件が不足しています: ' + missing.map(x => x.name).join('、'));
+      } else messages.push('構文・内容: ✅ 必須条件を満たしています');
+    } catch (e) {
+      rulesPassed = false;
+      messages.push('構文・内容: ❌ Pythonの構文を解析できませんでした\n' + e.message);
+    }
+  }
+  return { ...base, messages, rulesPassed, allPassed: base.allPassed && rulesPassed };
+}

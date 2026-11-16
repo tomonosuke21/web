@@ -27,6 +27,7 @@ const KIND_LABELS = { study: "スタディ", fill: "穴埋めテスト", problem
 let selectedQuest = null; // ステージを編集中のクエスト
 let currentStages = [];   // そのクエストのステージ
 let fields = {};          // 入力欄の部品
+let authorRunner = null;
 
 // ---------- 小さな補助 ----------
 function makeButton(label, onClick) {
@@ -280,72 +281,96 @@ function buildFields(kind) {
     );
   } else if (kind === "problem") {
     fields.statement = makeTextarea(3);
-    fields.starter = makeTextarea(8);
-    fields.starter.value = 'print("hello")';
+    fields.starter = makeTextarea(4);
+    fields.solution = makeTextarea(12);
+    fields.solution.className = "code-editor";
     fields.testRows = [];
-    const box = el("div");
+    fields.requirements = [];
+    const testBox = el("div");
+    const criteriaBox = el("div");
+    const analysisStatus = el("p", "正解例を入力すると、使用構文を自動抽出できます。");
     const addTestRow = () => {
       const input = makeTextarea(2);
-      const expected = makeTextarea(2);
-      const row = el("div");
-      row.append(
-        el("hr"),
-        labeled("入力(input() で読み込む内容。なければ空)", input),
-        labeled("正解の実行結果(output)", expected)
-      );
-      box.appendChild(row);
-      fields.testRows.push({ input: input, expected: expected });
+      const expected = el("p", "未生成");
+      expected.className = "generated-output";
+      const row = el("section"); row.className = "test-case card";
+      row.append(el("h4", "テストケース " + (fields.testRows.length + 1)),
+        labeled("入力(input()で読み込む内容。なければ空)", input),
+        el("span", "正解出力: "), expected);
+      testBox.appendChild(row);
+      fields.testRows.push({ input, expected, output: null });
     };
-    addTestRow();
-
-    // 作問中にPythonコードを実行して動作確認する画面
-    fields.previewInput = makeTextarea(2);
-    fields.previewOutput = el("pre");
-    fields.previewStatus = el("p", "Python実行環境を準備中…");
-    fields.previewRunner = createRunner("python");
-    const previewRunner = fields.previewRunner;
-    const previewStatus = fields.previewStatus;
-    const previewRun = fields.previewRun = makeButton("コードを実行", async () => {
-      fields.previewRun.disabled = true;
-      fields.previewOutput.textContent = "";
-      fields.previewStatus.textContent = "実行中…";
+    const analyzeButton = makeButton("正解例を解析して条件候補を抽出", async () => {
+      analyzeButton.disabled = true; analysisStatus.textContent = "解析中…";
       try {
-        const result = await previewRunner.run(fields.starter.value, fields.previewInput.value);
-        fields.previewOutput.textContent = result.lines.join("\n") || "(出力なし)";
-        if (result.timedOut) fields.previewStatus.textContent = "時間切れです";
-        else if (result.hasError) fields.previewStatus.textContent = "実行エラー";
-        else fields.previewStatus.textContent = "実行完了";
-      } catch (error) {
-        fields.previewStatus.textContent = "実行に失敗しました: " + error.message;
-      } finally {
-        fields.previewRun.disabled = false;
-      }
+        if (!authorRunner) authorRunner = createRunner("python");
+        await authorRunner.whenReady();
+        const candidates = await analyzePython(authorRunner, fields.solution.value);
+        fields.candidates = candidates;
+        fields.requirements = [];
+        renderCriteria(criteriaBox, candidates);
+        analysisStatus.textContent = candidates.length + "個の候補を抽出しました。必須にしたい項目にチェックしてください。";
+      } catch (e) { analysisStatus.textContent = "解析できませんでした: " + e.message; }
+      analyzeButton.disabled = false;
     });
-    fields.previewRun.disabled = true;
-    previewRunner.whenReady().then(() => {
-      previewStatus.textContent = "Pythonを実行できます";
-      previewRun.disabled = false;
+    const previewButton = makeButton("正解例を実行してテスト出力を生成", async () => {
+      previewButton.disabled = true; analysisStatus.textContent = "テスト実行中…";
+      try {
+        if (!authorRunner) authorRunner = createRunner("python");
+        await authorRunner.whenReady();
+        for (const t of fields.testRows) {
+          const r = await authorRunner.run(fields.solution.value, t.input.value);
+          if (r.hasError || r.timedOut) throw new Error(r.lines.join("\n") || "実行時間切れ");
+          t.output = r.lines.join("\n").trim();
+          t.expected.textContent = t.output || "(出力なし)";
+        }
+        analysisStatus.textContent = "正解出力を生成しました。内容を確認してステージを追加してください。";
+      } catch (e) { analysisStatus.textContent = "実行できませんでした: " + e.message; }
+      previewButton.disabled = false;
     });
-
-    const preview = el("section");
-    preview.append(
-      el("h4", "Python実行画面（作問用の動作確認）"),
-      el("p", "上の「解答者に最初から表示するコード」を実行します。"),
-      labeled("入力(input() に渡す内容)", fields.previewInput),
-      fields.previewRun,
-      fields.previewStatus,
-      fields.previewOutput
-    );
-
+    const addRuleType = el("select");
+    for (const [v, label] of [["syntax","構文"],["call","関数・命令"],["variable","変数名"],["operator","演算子"]]) {
+      const opt = el("option", label); opt.value = v; addRuleType.appendChild(opt);
+    }
+    const addRuleName = el("input"); addRuleName.placeholder = "例: For / range / total / Add";
+    const addRuleButton = makeButton("条件を追加", () => {
+      const rule = { type: addRuleType.value, name: addRuleName.value.trim() };
+      if (!rule.name) return;
+      if (!fields.requirements.some(x => x.type === rule.type && x.name === rule.name)) fields.requirements.push(rule);
+      const all = [...(fields.candidates || []), ...fields.requirements].filter((x, i, a) => a.findIndex(y => y.type === x.type && y.name === x.name) === i);
+      renderCriteria(criteriaBox, all); addRuleName.value = "";
+    });
+    addTestRow();
     sFields.append(
-      labeled("解答者に最初から表示するコード(なくてもOK)", fields.starter),
       labeled("問題文", fields.statement),
-      preview,
-      el("h4", "正解判定用テストケース"),
-      box,
-      makeButton("テストケースを追加", addTestRow)
+      labeled("最初から書いておくコード(なくてもOK)", fields.starter),
+      el("h3", "正解例のPythonコード"), fields.solution,
+      el("p", "正解例は作者用です。学習者には表示されません。"),
+      el("div").appendChild(analyzeButton).parentNode,
+      el("div").appendChild(previewButton).parentNode,
+      analysisStatus,
+      el("h3", "テストケース"), testBox, makeButton("テストケースを追加", addTestRow),
+      el("h3", "構文・内容の必須条件"),
+      el("p", "自動抽出した候補からチェックするか、独自条件を追加できます。"), criteriaBox,
+      addRuleType, addRuleName, addRuleButton
     );
   }
+}
+
+function renderCriteria(container, candidates) {
+  container.textContent = "";
+  if (!candidates.length) { container.textContent = "候補はありません。必要なら条件を手動追加してください。"; return; }
+  candidates.forEach(rule => {
+    const label = el("label"); label.className = "criteria-item";
+    const check = el("input"); check.type = "checkbox";
+    check.checked = fields.requirements.some(x => x.type === rule.type && x.name === rule.name);
+    check.addEventListener("change", () => {
+      if (check.checked) {
+        if (!fields.requirements.some(x => x.type === rule.type && x.name === rule.name)) fields.requirements.push(rule);
+      } else fields.requirements = fields.requirements.filter(x => !(x.type === rule.type && x.name === rule.name));
+    });
+    label.append(check, " ", rule.type + ": " + rule.name); container.appendChild(label);
+  });
 }
 
 // 入力欄から、ステージの中身(content)を作る。おかしければ Error を投げる
@@ -381,14 +406,12 @@ function buildContent(kind) {
     return { statement: statement, template: template, blanks: blanks };
   }
 
-  // problem
-  const tests = fields.testRows
-    .map((r) => ({ input: r.input.value.trimEnd(), expected: r.expected.value.trim() }))
-    .filter((t) => t.input !== "" || t.expected !== "");
-
-  if (tests.length === 0) throw new Error("テストケースを1つ以上書いてください");
-  if (tests.some((t) => t.expected === "")) throw new Error("「期待する出力」は必須です");
-  return { statement: statement, starter: fields.starter.value, tests: tests };
+  // problem: 正解例を実行して生成した期待出力を保存する
+  const tests = fields.testRows.map(r => ({ input: r.input.value.trimEnd(), expected: r.output }));
+  if (!fields.solution.value.trim()) throw new Error("正解例のPythonコードを入力してください");
+  if (tests.length === 0 || tests.some(t => t.expected === null)) throw new Error("先に正解例を実行して、すべてのテスト出力を生成してください");
+  return { statement, starter: fields.starter.value, solutionCode: fields.solution.value,
+    tests, requirements: fields.requirements || [] };
 }
 
 sKind.addEventListener("change", () => buildFields(sKind.value));

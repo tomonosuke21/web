@@ -1,0 +1,24 @@
+:root{--ink:#333446;--accent:#7F8CAA;--soft:#B8CFCE;--paper:#EAEFEF;--white:#fff;--line:#d7dfdf;--shadow:0 8px 24px rgba(51,52,70,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans JP",sans-serif;line-height:1.7}
+body>h1,body>p,body>div,body>h2,body>h3,body>ol,body>select,body>textarea,body>pre{max-width:1080px;margin-left:auto;margin-right:auto}
+body>h1{padding:28px 32px 12px;margin-top:0;background:var(--ink);color:var(--paper);max-width:none;font-size:1.7rem}
+body>p:first-of-type{padding:8px 32px;margin-top:0;max-width:none;background:var(--ink);color:var(--paper)}
+body>p:first-of-type a{color:var(--soft)}
+a{color:#52627f;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}
+body>div,body>h2,body>h3,body>ol,body>select,body>textarea,body>pre{margin-top:18px;margin-bottom:18px}
+#stage-body,#editor-main,#admin-main,#quest-list,#profile-edit{max-width:1080px;margin:24px auto;padding:28px;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+#stage-title{max-width:1080px;margin:28px auto 0;padding:24px 28px 0;color:var(--ink);background:transparent}
+#stage-message,#stage-next,#editor-notice{max-width:1080px;margin:12px auto;padding:0 8px}
+#login,#logout{margin:8px 6px 8px 0}
+button{border:0;border-radius:9px;background:var(--accent);color:white;padding:10px 17px;font-family:inherit;font-size:.95rem;font-weight:600;cursor:pointer;transition:.15s}button:hover{filter:brightness(.94);transform:translateY(-1px)}button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+input,select,textarea{font:inherit;color:var(--ink);border:1px solid #c7d0d3;border-radius:8px;background:#fff;padding:10px 12px;max-width:100%}input:focus,select:focus,textarea:focus{outline:3px solid rgba(127,140,170,.2);border-color:var(--accent)}
+label{display:block;font-weight:600;margin:12px 0 5px}textarea{width:min(100%,760px);display:block;resize:vertical}pre,.code-editor{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:4}.code-editor{width:100%;min-height:280px;background:#282a38;color:#e8edf0;border:1px solid #44485b;border-radius:12px;padding:18px;line-height:1.65;font-size:14px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f6f6;padding:16px;border-radius:10px;border:1px solid var(--line)}
+section.card{background:#f8fafa;border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}.test-case{max-width:760px}.generated-output{display:inline-block;background:var(--paper);padding:5px 10px;border-radius:6px;min-width:120px}
+.criteria-item{display:inline-flex;align-items:center;gap:6px;margin:5px 8px 5px 0;padding:6px 10px;background:var(--paper);border-radius:8px;font-weight:500}.criteria-item input{width:auto}
+#stage-editor{max-width:1080px;margin:24px auto;padding:28px;background:var(--white);border-radius:16px;box-shadow:var(--shadow)}
+#stage-editor-list li,#my-quests li{padding:8px 0;border-bottom:1px solid var(--line)}#stage-editor-list button,#my-quests button{margin-left:8px}
+#stage-body>p:first-child{font-size:1.05rem}#stage-body h3{margin-top:24px}#stage-body button{margin:8px 8px 8px 0}
+#stage-message{font-weight:700;color:#52627f}#stage-next a{display:inline-block;padding:10px 16px;background:var(--ink);color:white;border-radius:9px}
+hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+@media(max-width:700px){#stage-body,#editor-main,#admin-main,#quest-list,#profile-edit,#stage-editor{margin:14px;padding:18px;border-radius:12px}body>h1{padding:20px;font-size:1.4rem}body>p:first-of-type{padding:8px 20px}#stage-title{margin:18px 14px 0;padding:8px 6px 0;font-size:1.35rem}textarea{width:100%}button{margin:4px 4px 4px 0}}

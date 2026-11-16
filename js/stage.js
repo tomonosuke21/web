@@ -8,13 +8,6 @@ const nextEl = document.getElementById("stage-next");
 
 let currentStage = null;
 
-function makeStageTextarea(rows) {
-  const node = el("textarea");
-  node.rows = rows;
-  node.cols = 60;
-  return node;
-}
-
 // ---------- クリアしたときの処理 ----------
 async function markDone() {
   messageEl.textContent = "🎉 クリア!";
@@ -149,11 +142,11 @@ function renderProblem(content, language) {
   const runner = createRunner(language);
 
   const editor = el("textarea");
-  editor.rows = 10;
-  editor.cols = 60;
+  editor.rows = 16;
+  editor.className = "code-editor";
+  editor.spellcheck = false;
   editor.value = content.starter || "";
 
-  const runInput = makeStageTextarea(2);
   const runButton = el("button", "実行");
   const judgeButton = el("button", "ジャッジ");
   const status = el("p", "実行環境を準備中…");
@@ -176,15 +169,11 @@ function renderProblem(content, language) {
     result.textContent = "";
     output.textContent = "";
 
-    try {
-      const r = await runner.run(editor.value, runInput.value);
-      let text = r.lines.join("\n");
-      if (r.hasError) text += (text ? "\n" : "") + "実行エラー";
-      if (r.timedOut) text += "\n時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
-      output.textContent = text.slice(0, 10000) || "(出力なし)";
-    } finally {
-      setBusy(false);
-    }
+    const r = await runner.run(editor.value, "");
+    let text = r.lines.join("\n");
+    if (r.timedOut) text += "\n時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
+    output.textContent = text.slice(0, 10000);
+    setBusy(false);
   });
 
   judgeButton.addEventListener("click", async () => {
@@ -192,7 +181,7 @@ function renderProblem(content, language) {
     output.textContent = "";
     result.textContent = "ジャッジ中…";
 
-    const g = await gradeCode(runner, editor.value, tests);
+    const g = await gradeCodeWithRules(runner, editor.value, tests, content.requirements || []);
     output.textContent = g.messages.join("\n").slice(0, 10000);
     result.textContent = g.allPassed ? "✅ 全部正解!" : "❌ " + g.passed + " / " + g.total + " 正解";
     setBusy(false);
@@ -202,11 +191,9 @@ function renderProblem(content, language) {
 
   bodyEl.append(
     el("p", content.statement || ""),
-    editor, el("br"),
-    el("p", "標準入力（input()で読み込む内容）"),
-    runInput, el("br"),
-    runButton, judgeButton,
-    status, result, output
+    el("h3", "Pythonエディタ"),
+    editor, el("div").append(runButton, judgeButton),
+    status, result, el("h3", "実行結果"), output
   );
 }
 
