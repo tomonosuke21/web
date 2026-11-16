@@ -9,25 +9,41 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
 </head>
 <body>
-  <p><a href="quests.html">クエスト一覧へ戻る</a></p>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1 class="site-title">Python学習 - ステージ</h1>
+      <nav class="site-nav">
+        <a href="quests.html">クエスト一覧へ戻る</a>
+        <a href="index.html">練習問題</a>
+        <a href="editor.html">問題を作る</a>
+      </nav>
+    </div>
+  </header>
 
-  <div>
-    <button id="login">GitHubでログイン</button>
-    <button id="logout" hidden>ログアウト</button>
-    <span id="user"></span>
-  </div>
+  <main class="container">
+    <div class="auth-bar">
+      <div class="auth-controls">
+        <button id="login">GitHubでログイン</button>
+        <button id="logout" class="secondary" hidden>ログアウト</button>
+        <span id="user"></span>
+      </div>
+    </div>
 
-  <div id="profile-edit" hidden>
-    <label for="nickname-input">ニックネーム(本名は使わないでください):</label>
-    <input id="nickname-input" type="text" maxlength="20">
-    <button id="nickname-save">保存</button>
-    <span id="nickname-message"></span>
-  </div>
+    <div id="profile-edit" hidden>
+      <label for="nickname-input">ニックネーム(本名は使わないでください):</label>
+      <input id="nickname-input" type="text" maxlength="20">
+      <button id="nickname-save">保存</button>
+      <span id="nickname-message"></span>
+    </div>
 
-  <h1 id="stage-title">読み込み中…</h1>
-  <div id="stage-body"></div>
-  <p id="stage-message"></p>
-  <p id="stage-next"></p>
+    <div class="center-card" style="margin-bottom: 16px;">
+      <h2 id="stage-title" style="margin: 0;">読み込み中…</h2>
+    </div>
+
+    <div id="stage-body"></div>
+    <p id="stage-message"></p>
+    <p id="stage-next"></p>
+  </main>
 
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>

@@ -1,24 +1,753 @@
-:root{--ink:#333446;--accent:#7F8CAA;--soft:#B8CFCE;--paper:#EAEFEF;--white:#fff;--line:#d7dfdf;--shadow:0 8px 24px rgba(51,52,70,.08)}
-*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans JP",sans-serif;line-height:1.7}
-body>h1,body>p,body>div,body>h2,body>h3,body>ol,body>select,body>textarea,body>pre{max-width:1080px;margin-left:auto;margin-right:auto}
-body>h1{padding:28px 32px 12px;margin-top:0;background:var(--ink);color:var(--paper);max-width:none;font-size:1.7rem}
-body>p:first-of-type{padding:8px 32px;margin-top:0;max-width:none;background:var(--ink);color:var(--paper)}
-body>p:first-of-type a{color:var(--soft)}
-a{color:#52627f;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}
-body>div,body>h2,body>h3,body>ol,body>select,body>textarea,body>pre{margin-top:18px;margin-bottom:18px}
-#stage-body,#editor-main,#admin-main,#quest-list,#profile-edit{max-width:1080px;margin:24px auto;padding:28px;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
-#stage-title{max-width:1080px;margin:28px auto 0;padding:24px 28px 0;color:var(--ink);background:transparent}
-#stage-message,#stage-next,#editor-notice{max-width:1080px;margin:12px auto;padding:0 8px}
-#login,#logout{margin:8px 6px 8px 0}
-button{border:0;border-radius:9px;background:var(--accent);color:white;padding:10px 17px;font-family:inherit;font-size:.95rem;font-weight:600;cursor:pointer;transition:.15s}button:hover{filter:brightness(.94);transform:translateY(-1px)}button:disabled{opacity:.45;cursor:not-allowed;transform:none}
-input,select,textarea{font:inherit;color:var(--ink);border:1px solid #c7d0d3;border-radius:8px;background:#fff;padding:10px 12px;max-width:100%}input:focus,select:focus,textarea:focus{outline:3px solid rgba(127,140,170,.2);border-color:var(--accent)}
-label{display:block;font-weight:600;margin:12px 0 5px}textarea{width:min(100%,760px);display:block;resize:vertical}pre,.code-editor{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:4}.code-editor{width:100%;min-height:280px;background:#282a38;color:#e8edf0;border:1px solid #44485b;border-radius:12px;padding:18px;line-height:1.65;font-size:14px}
-pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f6f6;padding:16px;border-radius:10px;border:1px solid var(--line)}
-section.card{background:#f8fafa;border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}.test-case{max-width:760px}.generated-output{display:inline-block;background:var(--paper);padding:5px 10px;border-radius:6px;min-width:120px}
-.criteria-item{display:inline-flex;align-items:center;gap:6px;margin:5px 8px 5px 0;padding:6px 10px;background:var(--paper);border-radius:8px;font-weight:500}.criteria-item input{width:auto}
-#stage-editor{max-width:1080px;margin:24px auto;padding:28px;background:var(--white);border-radius:16px;box-shadow:var(--shadow)}
-#stage-editor-list li,#my-quests li{padding:8px 0;border-bottom:1px solid var(--line)}#stage-editor-list button,#my-quests button{margin-left:8px}
-#stage-body>p:first-child{font-size:1.05rem}#stage-body h3{margin-top:24px}#stage-body button{margin:8px 8px 8px 0}
-#stage-message{font-weight:700;color:#52627f}#stage-next a{display:inline-block;padding:10px 16px;background:var(--ink);color:white;border-radius:9px}
-hr{border:0;border-top:1px solid var(--line);margin:20px 0}
-@media(max-width:700px){#stage-body,#editor-main,#admin-main,#quest-list,#profile-edit,#stage-editor{margin:14px;padding:18px;border-radius:12px}body>h1{padding:20px;font-size:1.4rem}body>p:first-of-type{padding:8px 20px}#stage-title{margin:18px 14px 0;padding:8px 6px 0;font-size:1.35rem}textarea{width:100%}button{margin:4px 4px 4px 0}}
+:root {
+  --ink: #333446;
+  --accent: #4c8bf5;
+  --accent-dark: #3572db;
+  --success: #2ea44f;
+  --danger: #d9534f;
+  --soft: #B8CFCE;
+  --paper: #f0f3f6;
+  --white: #fff;
+  --line: #dce2e8;
+  --shadow: 0 8px 24px rgba(51, 52, 70, 0.08);
+  --editor-bg: #1e1e1e;
+  --editor-bar: #333333;
+  --editor-text: #f0f0f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Inter, "Noto Sans JP", sans-serif;
+  line-height: 1.65;
+}
+
+/* ヘッダー・ナビゲーション */
+.site-header {
+  background: var(--ink);
+  color: var(--white);
+  padding: 16px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.site-header-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.site-title {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.site-nav a {
+  color: var(--soft);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.site-nav a:hover {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+/* 中央揃えメインコンテナ */
+.container {
+  max-width: 1160px;
+  margin: 24px auto;
+  padding: 0 20px;
+}
+
+.center-card {
+  max-width: 1120px;
+  margin: 20px auto;
+  padding: 24px 28px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.auth-bar {
+  max-width: 1120px;
+  margin: 16px auto;
+  padding: 12px 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#profile-edit {
+  max-width: 1120px;
+  margin: 12px auto;
+  padding: 14px 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+a {
+  color: #3b6cc7;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  padding: 9px 16px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button.secondary {
+  background: #6c757d;
+}
+
+button.secondary:hover:not(:disabled) {
+  background: #5a6268;
+}
+
+button.success {
+  background: var(--success);
+}
+
+button.success:hover:not(:disabled) {
+  background: #248a3f;
+}
+
+input, select, textarea {
+  font: inherit;
+  color: var(--ink);
+  border: 1px solid #c7d0d3;
+  border-radius: 8px;
+  background: #fff;
+  padding: 9px 12px;
+  max-width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 3px solid rgba(76, 139, 245, 0.2);
+  border-color: var(--accent);
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin: 10px 0 4px;
+}
+
+/* =========================================
+   トイプロ風 IDE ワークスペース & 実行環境
+   ========================================= */
+.problem-selector-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto 20px;
+  padding: 16px 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.problem-selector-bar select {
+  min-width: 280px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.ide-workspace {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 20px;
+  max-width: 1120px;
+  margin: 0 auto 28px;
+  align-items: stretch;
+}
+
+@media (max-width: 860px) {
+  .ide-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 左ペイン：問題文・仕様・例 */
+.ide-left-pane {
+  position: relative;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  min-height: 460px;
+}
+
+.problem-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--paper);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.problem-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: var(--ink);
+}
+
+.problem-statement {
+  font-size: 1rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  margin-bottom: 20px;
+}
+
+.example-box {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: auto;
+}
+
+.example-box h4 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: #52627f;
+}
+
+.example-code {
+  background: #282a36;
+  color: #f8f8f2;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.92rem;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* 左ペインに重なるフローティング実行結果ウィンドウ（トイプロ風） */
+.floating-console {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: calc(100% - 28px);
+  max-width: 380px;
+  background: #1e1e1e;
+  color: #f4f4f4;
+  border: 1px solid #444;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  z-index: 20;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-console[hidden] {
+  display: none;
+}
+
+.floating-console-header {
+  background: #323233;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e0e0e0;
+  border-bottom: 1px solid #454545;
+}
+
+.floating-console-close {
+  background: transparent;
+  color: #bbb;
+  border: none;
+  padding: 2px 6px;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.floating-console-close:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  transform: none;
+}
+
+.floating-console-body {
+  padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.92rem;
+  min-height: 130px;
+  max-height: 280px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+  background: #1e1e1e;
+  color: #f8f8f2;
+  border: none;
+  border-radius: 0;
+}
+
+/* 右ペイン：ダークエディタ + テストケース */
+.ide-right-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ide-editor-box {
+  background: var(--editor-bg);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+}
+
+.ide-toolbar {
+  background: var(--editor-bar);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #444;
+  gap: 8px;
+}
+
+.ide-toolbar-left,
+.ide-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ide-btn {
+  background: transparent;
+  color: #e6e6e6;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ide-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: none;
+}
+
+.ide-btn-run .icon {
+  color: #4ec9b0;
+}
+
+.ide-btn-judge .icon {
+  color: #569cd6;
+}
+
+.ide-status-badge {
+  font-size: 0.78rem;
+  color: #aaa;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 99px;
+}
+
+.ide-textarea-wrap {
+  display: flex;
+  position: relative;
+  min-height: 290px;
+}
+
+.ide-gutter {
+  width: 42px;
+  background: #252526;
+  color: #858585;
+  text-align: right;
+  padding: 16px 8px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.65;
+  user-select: none;
+  border-right: 1px solid #333;
+  overflow: hidden;
+}
+
+.ide-code-input {
+  flex: 1;
+  width: 100%;
+  min-height: 290px;
+  background: var(--editor-bg);
+  color: var(--editor-text);
+  border: none;
+  border-radius: 0;
+  padding: 16px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.65;
+  tab-size: 4;
+  resize: vertical;
+  outline: none;
+}
+
+.ide-code-input:focus {
+  outline: none;
+}
+
+/* テストケース一覧テーブル（右ペイン下部） */
+.testcase-panel {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+}
+
+.testcase-panel h4 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.testcase-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.testcase-table th,
+.testcase-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.testcase-table th {
+  color: #64748b;
+  font-weight: 600;
+  background: #f8fafc;
+}
+
+.testcase-table code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+
+/* =========================================
+   トイプロ風 ジャッジ（採点）モーダル
+   ========================================= */
+.judge-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.judge-modal-backdrop[hidden] {
+  display: none;
+}
+
+.judge-modal {
+  background: var(--white);
+  width: 100%;
+  max-width: 680px;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+  padding: 28px 32px;
+  text-align: center;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalPop 0.18s ease-out;
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.judge-modal-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.judge-modal-status.pass {
+  color: var(--success);
+}
+
+.judge-modal-status.fail {
+  color: var(--danger);
+}
+
+.judge-modal-status.running {
+  color: var(--accent);
+}
+
+.judge-result-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+.judge-result-table th {
+  border-bottom: 2px solid var(--line);
+  padding: 10px 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.judge-result-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 12px;
+  vertical-align: middle;
+}
+
+.judge-icon-cell {
+  width: 44px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.judge-icon-ok {
+  color: var(--success);
+}
+
+.judge-icon-ng {
+  color: var(--danger);
+}
+
+.judge-code-cell {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.judge-save-note {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-bottom: 18px;
+}
+
+.judge-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* =========================================
+   問題作成画面（editor.html）・クエスト一覧など
+   ========================================= */
+.editor-test-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.editor-sandbox-panel {
+  margin-top: 14px;
+  background: #1e1e1e;
+  color: #f8f8f2;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.editor-sandbox-header {
+  background: #333;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.editor-sandbox-body {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 700px) {
+  .editor-sandbox-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.editor-sandbox-body textarea {
+  width: 100%;
+  background: #252526;
+  color: #f8f8f2;
+  border: 1px solid #444;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.9rem;
+}
+
+.editor-sandbox-output {
+  background: #141414;
+  color: #4ec9b0;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 76px;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+section.card {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.generated-output {
+  display: inline-block;
+  background: var(--paper);
+  padding: 5px 10px;
+  border-radius: 6px;
+  min-width: 120px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.criteria-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 5px 8px 5px 0;
+  padding: 6px 10px;
+  background: var(--paper);
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.criteria-item input {
+  width: auto;
+}
+
+#stage-editor-list li,
+#my-quests li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+#stage-editor-list button,
+#my-quests button {
+  margin-left: 8px;
+}
+
+#stage-message {
+  font-weight: 700;
+  color: var(--success);
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+#stage-next {
+  text-align: center;
+  margin-top: 16px;
+}
+
+#stage-next a {
+  display: inline-block;
+  padding: 11px 22px;
+  background: var(--accent);
+  color: white;
+  border-radius: 9px;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 20px 0;
+}

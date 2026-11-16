@@ -9,74 +9,95 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
 </head>
 <body>
-  <h1>問題を作る</h1>
-  <p><a href="quests.html">クエスト一覧へ</a></p>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1 class="site-title">問題を作る</h1>
+      <nav class="site-nav">
+        <a href="quests.html">クエスト一覧へ</a>
+        <a href="index.html">練習問題</a>
+      </nav>
+    </div>
+  </header>
 
-  <div>
-    <button id="login">GitHubでログイン</button>
-    <button id="logout" hidden>ログアウト</button>
-    <span id="user"></span>
-  </div>
-
-  <div id="profile-edit" hidden>
-    <label for="nickname-input">ニックネーム(本名は使わないでください):</label>
-    <input id="nickname-input" type="text" maxlength="20">
-    <button id="nickname-save">保存</button>
-    <span id="nickname-message"></span>
-  </div>
-
-  <p id="editor-notice">読み込み中…</p>
-
-  <div id="editor-main" hidden>
-    <h2>新しいクエストを作る</h2>
-    <div>
-      <label>タイトル <input id="q-title" type="text" maxlength="100"></label><br>
-      <label>説明 <input id="q-description" type="text" maxlength="500" size="50"></label><br>
-      <label>言語
-        <select id="q-language">
-          <option value="python">Python</option>
-        </select>
-      </label>
-      <label>難易度
-        <select id="q-difficulty">
-          <option value="1">★</option>
-          <option value="2">★★</option>
-          <option value="3">★★★</option>
-          <option value="4">★★★★</option>
-          <option value="5">★★★★★</option>
-        </select>
-      </label>
-      <label>所要時間(分) <input id="q-minutes" type="number" min="1" max="120" value="5"></label><br>
-      <button id="q-create">作成する(下書き)</button>
-      <span id="q-message"></span>
+  <main class="container">
+    <div class="auth-bar">
+      <div class="auth-controls">
+        <button id="login">GitHubでログイン</button>
+        <button id="logout" class="secondary" hidden>ログアウト</button>
+        <span id="user"></span>
+      </div>
     </div>
 
-    <h2>自分のクエスト</h2>
-    <div id="my-quests"></div>
-
-    <div id="stage-editor" hidden>
-      <h2 id="stage-editor-title"></h2>
-      <ol id="stage-editor-list"></ol>
-
-      <h3>ステージを追加</h3>
-      <label>種類
-        <select id="s-kind">
-          <option value="study">スタディ</option>
-          <option value="fill">穴埋めテスト</option>
-          <option value="problem">練習問題</option>
-        </select>
-      </label>
-      <label>タイトル <input id="s-title" type="text" maxlength="100"></label>
-      <div id="s-fields"></div>
-      <button id="s-add">ステージを追加する</button>
-      <span id="s-message"></span>
+    <div id="profile-edit" hidden>
+      <label for="nickname-input">ニックネーム(本名は使わないでください):</label>
+      <input id="nickname-input" type="text" maxlength="20">
+      <button id="nickname-save">保存</button>
+      <span id="nickname-message"></span>
     </div>
-  </div>
 
-  <div id="admin-main" hidden>
-    <h2>承認待ちのクエスト(管理者)</h2>
-    <div id="pending-quests"></div>
-  </div>
+    <p id="editor-notice" style="text-align:center;">読み込み中…</p>
+
+    <div id="editor-main" class="center-card" hidden>
+      <h2>新しいクエストを作る</h2>
+      <div>
+        <label>タイトル <input id="q-title" type="text" maxlength="100"></label>
+        <label>説明 <input id="q-description" type="text" maxlength="500" size="50"></label>
+        <div style="display:flex; flex-wrap:wrap; gap:16px;">
+          <label>言語
+            <select id="q-language">
+              <option value="python">Python</option>
+            </select>
+          </label>
+          <label>難易度
+            <select id="q-difficulty">
+              <option value="1">★</option>
+              <option value="2">★★</option>
+              <option value="3">★★★</option>
+              <option value="4">★★★★</option>
+              <option value="5">★★★★★</option>
+            </select>
+          </label>
+          <label>所要時間(分) <input id="q-minutes" type="number" min="1" max="120" value="5"></label>
+        </div>
+        <div style="margin-top:12px;">
+          <button id="q-create">作成する(下書き)</button>
+          <span id="q-message"></span>
+        </div>
+      </div>
+
+      <hr>
+      <h2>自分のクエスト</h2>
+      <div id="my-quests"></div>
+
+      <div id="stage-editor" hidden>
+        <hr>
+        <h2 id="stage-editor-title"></h2>
+        <ol id="stage-editor-list"></ol>
+
+        <h3>ステージを追加</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:16px;">
+          <label>種類
+            <select id="s-kind">
+              <option value="study">スタディ</option>
+              <option value="fill">穴埋めテスト</option>
+              <option value="problem">練習問題</option>
+            </select>
+          </label>
+          <label>タイトル <input id="s-title" type="text" maxlength="100"></label>
+        </div>
+        <div id="s-fields"></div>
+        <div style="margin-top:16px;">
+          <button id="s-add" class="success">ステージを追加する</button>
+          <span id="s-message"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-main" class="center-card" hidden>
+      <h2>承認待ちのクエスト(管理者)</h2>
+      <div id="pending-quests"></div>
+    </div>
+  </main>
 
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>

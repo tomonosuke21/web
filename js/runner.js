@@ -1,4 +1,4 @@
-// 言語ごとの、実行用Workerのファイル(JavaScriptなどは、ここに足していく)
+// 言語ごとの、実行用Workerのファイル
 const WORKER_FILES = { python: "js/worker.js" };
 
 const TIME_LIMIT_MS = 5000; // 1回の実行の制限時間
@@ -59,12 +59,14 @@ function createRunner(language) {
   return { run: run, whenReady: () => ready };
 }
 
-// テストケースを順に実行して、結果をまとめる
-async function gradeCode(runner, code, tests) {
+// テストケースを順に実行して、結果を詳細付きでまとめる
+async function gradeCode(runner, code, tests, onProgress) {
   const messages = [];
+  const details = [];
   let passed = 0;
 
   for (let i = 0; i < tests.length; i++) {
+    if (typeof onProgress === "function") onProgress(i, tests.length);
     const test = tests[i];
     const result = await runner.run(code, test.input || "");
     const actual = result.lines.join("\n").trim();
@@ -73,13 +75,41 @@ async function gradeCode(runner, code, tests) {
 
     if (result.timedOut) {
       messages.push(label + "⏱ 時間切れ");
+      details.push({
+        index: i + 1,
+        input: test.input || "",
+        expected: expected,
+        actual: "(時間切れ: " + (TIME_LIMIT_MS / 1000) + "秒)",
+        passed: false,
+      });
     } else if (result.hasError) {
       messages.push(label + "❌ 実行エラー\n" + actual);
+      details.push({
+        index: i + 1,
+        input: test.input || "",
+        expected: expected,
+        actual: actual || "(エラー)",
+        passed: false,
+      });
     } else if (actual === expected) {
       passed++;
       messages.push(label + "✅ 正解");
+      details.push({
+        index: i + 1,
+        input: test.input || "",
+        expected: expected,
+        actual: actual,
+        passed: true,
+      });
     } else {
       messages.push(label + "❌ 不正解(期待: " + expected + " / 実際: " + actual + ")");
+      details.push({
+        index: i + 1,
+        input: test.input || "",
+        expected: expected,
+        actual: actual,
+        passed: false,
+      });
     }
   }
 
@@ -88,12 +118,12 @@ async function gradeCode(runner, code, tests) {
     total: tests.length,
     allPassed: tests.length > 0 && passed === tests.length,
     messages: messages,
+    details: details,
   };
 }
 
 // Pyodide標準のastモジュールでPythonコードの構造を解析する。
 async function analyzePython(runner, code) {
-  // JSON文字列を安全にPython文字列として渡す
   const payload = JSON.stringify(code);
   const analysisCode = `import ast, json\nsource = json.loads(${JSON.stringify(payload)})\ntree = ast.parse(source)\nitems = set()\nfor node in ast.walk(tree):\n    kind = type(node).__name__\n    if kind in {'For','AsyncFor','While','If','IfExp','FunctionDef','AsyncFunctionDef','ClassDef','ListComp','SetComp','DictComp','GeneratorExp','Try','With','Lambda','Return','Break','Continue'}:\n        items.add(('syntax', kind))\n    if isinstance(node, ast.Call):\n        name = node.func.id if isinstance(node.func, ast.Name) else (node.func.attr if isinstance(node.func, ast.Attribute) else '')\n        if name: items.add(('call', name))\n    if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):\n        items.add(('variable', node.id))\n    if isinstance(node, ast.operator): items.add(('operator', type(node).__name__))\nprint(json.dumps([{'type': a, 'name': b} for a,b in sorted(items)]))`;
   const result = await runner.run(analysisCode, '');
@@ -102,23 +132,67 @@ async function analyzePython(runner, code) {
   catch { throw new Error('構文解析の結果を読み取れませんでした'); }
 }
 
-async function gradeCodeWithRules(runner, code, tests, requirements) {
-  const base = await gradeCode(runner, code, tests);
+async function gradeCodeWithRules(runner, code, tests, requirements, onProgress) {
+  const base = await gradeCode(runner, code, tests, onProgress);
   const messages = [...base.messages];
+  const ruleResults = [];
   let rulesPassed = true;
+
   if (requirements && requirements.length) {
     try {
       const found = await analyzePython(runner, code);
       const keys = new Set(found.map(x => x.type + ':' + x.name));
+      for (const req of requirements) {
+        const ok = keys.has(req.type + ':' + req.name);
+        if (!ok) rulesPassed = false;
+        ruleResults.push({
+          label: "必須条件 (" + req.name + ")",
+          passed: ok,
+        });
+      }
       const missing = requirements.filter(x => !keys.has(x.type + ':' + x.name));
       if (missing.length) {
-        rulesPassed = false;
         messages.push('構文・内容: ❌ 必須条件が不足しています: ' + missing.map(x => x.name).join('、'));
-      } else messages.push('構文・内容: ✅ 必須条件を満たしています');
+      } else {
+        messages.push('構文・内容: ✅ 必須条件を満たしています');
+      }
     } catch (e) {
       rulesPassed = false;
+      ruleResults.push({ label: "構文解析", passed: false });
       messages.push('構文・内容: ❌ Pythonの構文を解析できませんでした\n' + e.message);
     }
   }
-  return { ...base, messages, rulesPassed, allPassed: base.allPassed && rulesPassed };
+  return {
+    ...base,
+    messages,
+    ruleResults,
+    rulesPassed,
+    allPassed: base.allPassed && rulesPassed,
+  };
+}
+
+// 行番号シンクロ用ヘルパー
+function attachLineNumbers(textarea, gutter) {
+  function sync() {
+    const lines = textarea.value.split("\n").length;
+    const nums = [];
+    for (let i = 1; i <= Math.max(lines, 1); i++) nums.push(i);
+    gutter.textContent = nums.join("\n");
+  }
+  textarea.addEventListener("input", sync);
+  textarea.addEventListener("scroll", () => {
+    gutter.scrollTop = textarea.scrollTop;
+  });
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      textarea.value = textarea.value.substring(0, start) + "    " + textarea.value.substring(end);
+      textarea.selectionStart = textarea.selectionEnd = start + 4;
+      sync();
+    }
+  });
+  sync();
+  return sync;
 }

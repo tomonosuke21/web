@@ -17,6 +17,7 @@ async function fetchDoneStageIds() {
 // クエスト1件ぶんのカードを作る
 function createQuestCard(quest) {
   const card = document.createElement("section");
+  card.className = "card";
 
   const title = document.createElement("h2");
   title.textContent = quest.title;

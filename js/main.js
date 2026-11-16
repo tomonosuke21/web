@@ -1,27 +1,38 @@
 const problemSelect = document.getElementById("problem-select");
 const titleText = document.getElementById("problem-title");
 const statementText = document.getElementById("problem-statement");
+const exampleContainer = document.getElementById("example-container");
+const exampleContent = document.getElementById("example-content");
+const testcaseTbody = document.getElementById("testcase-tbody");
+
 const codeBox = document.getElementById("code");
+const lineNumbers = document.getElementById("line-numbers");
 const runButton = document.getElementById("run");
 const gradeButton = document.getElementById("grade");
+const resetCodeButton = document.getElementById("reset-code");
 const statusText = document.getElementById("status");
-const resultText = document.getElementById("result");
+
+const floatingConsole = document.getElementById("floating-console");
+const closeConsoleBtn = document.getElementById("close-console");
 const output = document.getElementById("output");
 
-const TIME_LIMIT_MS = 5000;
-const MAX_OUTPUT = 10000; // 画面に出す文字数の上限
-const MAX_LINES = 1000;   // 1回の実行で受け取る行数の上限
+const judgeBackdrop = document.getElementById("judge-modal-backdrop");
+const judgeStatusEl = document.getElementById("judge-modal-status");
+const judgeTbody = document.getElementById("judge-result-tbody");
+const resultText = document.getElementById("result");
+const closeJudgeModalBtn = document.getElementById("close-judge-modal");
+const nextProblemBtn = document.getElementById("next-problem-btn");
+
+const MAX_OUTPUT = 10000;
 const PROBLEM_IDS = ["001-hello", "002-double"];
 
-let worker = null;
+const runner = createRunner("python");
 let workerReady = false;
-let readyPromise = null;
-let resolveReady = null;
-let currentRun = null;     // 今実行中の情報(なければ null)
-let currentProblem = null; // 今選んでいる問題
+let currentProblem = null;
 let busy = false;
 
-// ---------- ボタンの状態 ----------
+const syncLineNumbers = attachLineNumbers(codeBox, lineNumbers);
+
 function updateButtons() {
   const disabled = !workerReady || busy;
   runButton.disabled = disabled;
@@ -33,131 +44,134 @@ function setBusy(value) {
   updateButtons();
 }
 
-// ---------- Worker ----------
-function createWorker() {
-  workerReady = false;
-  statusText.textContent = "Pythonを準備中…";
+runner.whenReady().then(() => {
+  workerReady = true;
+  statusText.textContent = "準備完了";
   updateButtons();
+});
 
-  readyPromise = new Promise((resolve) => {
-    resolveReady = resolve;
-  });
+// フローティング実行結果ウィンドウの操作
+closeConsoleBtn.addEventListener("click", () => {
+  floatingConsole.hidden = true;
+});
 
-  worker = new Worker("js/worker.js");
-  worker.onmessage = handleMessage;
-}
+// ジャッジモーダルの操作
+closeJudgeModalBtn.addEventListener("click", () => {
+  judgeBackdrop.hidden = true;
+});
 
-function handleMessage(event) {
-  const message = event.data;
-
-  if (message.type === "ready") {
-    workerReady = true;
-    statusText.textContent = "準備できました!";
-    updateButtons();
-    resolveReady();
-    return;
+judgeBackdrop.addEventListener("click", (e) => {
+  if (e.target === judgeBackdrop) {
+    judgeBackdrop.hidden = true;
   }
+});
 
-  if (currentRun === null) return;
-
-  if (message.type === "stdout" || message.type === "error") {
-    if (message.type === "error") currentRun.hasError = true;
-    if (currentRun.lines.length < MAX_LINES) {
-      currentRun.lines.push(message.text);
-    }
-  } else if (message.type === "done") {
-    currentRun.finish(false);
+nextProblemBtn.addEventListener("click", () => {
+  judgeBackdrop.hidden = true;
+  const idx = PROBLEM_IDS.indexOf(problemSelect.value);
+  if (idx >= 0 && idx + 1 < PROBLEM_IDS.length) {
+    problemSelect.value = PROBLEM_IDS[idx + 1];
+    loadProblem(problemSelect.value);
   }
-}
+});
 
-// ---------- 1回実行して、結果を返す ----------
-async function runOnce(code, input) {
-  await readyPromise; // Workerの準備ができるまで待つ
+resetCodeButton.addEventListener("click", () => {
+  if (!currentProblem) return;
+  codeBox.value = currentProblem.starter || 'print("hello")';
+  syncLineNumbers();
+});
 
-  return new Promise((resolve) => {
-    const run = { lines: [], hasError: false };
-    currentRun = run;
-
-    run.finish = (timedOut) => {
-      clearTimeout(run.timerId);
-      currentRun = null;
-      resolve({ lines: run.lines, hasError: run.hasError, timedOut: timedOut });
-    };
-
-    // 時間切れ:Workerを止めて作り直す
-    run.timerId = setTimeout(() => {
-      worker.terminate();
-      createWorker();
-      run.finish(true);
-    }, TIME_LIMIT_MS);
-
-    worker.postMessage({ type: "run", code: code, input: input });
-  });
-}
-
-// ---------- 実行ボタン ----------
+// ---------- 実行ボタン（フローティング結果表示） ----------
 runButton.addEventListener("click", async () => {
   setBusy(true);
-  output.textContent = "";
-  resultText.textContent = "";
+  floatingConsole.hidden = false;
+  output.textContent = "実行中…";
 
-  const result = await runOnce(codeBox.value, "");
+  const firstInput =
+    currentProblem && Array.isArray(currentProblem.tests) && currentProblem.tests.length > 0
+      ? currentProblem.tests[0].input || ""
+      : "";
+
+  const result = await runner.run(codeBox.value, firstInput);
 
   let text = result.lines.join("\n");
   if (result.timedOut) {
     text += "\n時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
   }
+  if (!text.trim()) {
+    text = "(出力なし)";
+  }
   output.textContent = text.slice(0, MAX_OUTPUT);
   setBusy(false);
 });
 
-// ---------- 採点ボタン ----------
+// ---------- ジャッジボタン（採点モーダル表示） ----------
 gradeButton.addEventListener("click", async () => {
   if (currentProblem === null) return;
 
   setBusy(true);
-  output.textContent = "";
-  resultText.textContent = "採点中…";
+  floatingConsole.hidden = true;
+  judgeBackdrop.hidden = false;
+  nextProblemBtn.hidden = true;
+  resultText.textContent = "";
 
-  const tests = currentProblem.tests;
-  const messages = [];
-  let passedCount = 0;
+  const tests = currentProblem.tests || [];
+  judgeStatusEl.className = "judge-modal-status running";
+  judgeStatusEl.textContent = "ジャッジ中… (0/" + tests.length + ")";
+  judgeTbody.textContent = "";
 
-  for (let i = 0; i < tests.length; i++) {
-    const test = tests[i];
-    const result = await runOnce(codeBox.value, test.input);
-    const actual = result.lines.join("\n").trim();
-    const expected = test.expected.trim();
-    const label = "ケース" + (i + 1) + ": ";
+  const g = await gradeCode(runner, codeBox.value, tests, (done, total) => {
+    judgeStatusEl.textContent = "ジャッジ中… (" + done + "/" + total + ")";
+  });
 
-    if (result.timedOut) {
-      messages.push(label + "⏱ 時間切れ");
-    } else if (result.hasError) {
-      messages.push(label + "❌ 実行エラー\n" + actual);
-    } else if (actual === expected) {
-      passedCount++;
-      messages.push(label + "✅ 正解");
-    } else {
-      messages.push(label + "❌ 不正解(期待: " + expected + " / 実際: " + actual + ")");
+  judgeTbody.textContent = "";
+  for (const d of g.details) {
+    const tr = document.createElement("tr");
+
+    const iconTd = document.createElement("td");
+    iconTd.className = "judge-icon-cell " + (d.passed ? "judge-icon-ok" : "judge-icon-ng");
+    iconTd.textContent = d.passed ? "✓" : "✕";
+
+    const inTd = document.createElement("td");
+    inTd.className = "judge-code-cell";
+    inTd.textContent = d.input !== "" ? d.input : "(なし)";
+
+    const expTd = document.createElement("td");
+    expTd.className = "judge-code-cell";
+    expTd.textContent = d.expected;
+
+    const actTd = document.createElement("td");
+    actTd.className = "judge-code-cell";
+    actTd.textContent = d.actual;
+
+    tr.append(iconTd, inTd, expTd, actTd);
+    judgeTbody.appendChild(tr);
+  }
+
+  if (g.allPassed) {
+    judgeStatusEl.className = "judge-modal-status pass";
+    judgeStatusEl.textContent = "✓ 正解！天才！";
+    const idx = PROBLEM_IDS.indexOf(currentProblem.id);
+    if (idx >= 0 && idx + 1 < PROBLEM_IDS.length) {
+      nextProblemBtn.hidden = false;
     }
+  } else {
+    judgeStatusEl.className = "judge-modal-status fail";
+    judgeStatusEl.textContent = "✕ 不正解 (" + g.passed + " / " + g.total + " 正解)";
   }
 
-  if (passedCount === tests.length) {
-    resultText.textContent = "✅ 全部正解!";
-  } else {
-    resultText.textContent = "❌ " + passedCount + " / " + tests.length + " 正解";
-  }
-  output.textContent = messages.join("\n").slice(0, MAX_OUTPUT);
-    const saveMessage = await saveResult(currentProblem.id, passedCount === tests.length, codeBox.value);
-  resultText.textContent += "(" + saveMessage + ")";
+  const saveMessage = await saveResult(currentProblem.id, g.allPassed, codeBox.value);
+  resultText.textContent = saveMessage;
   setBusy(false);
 });
 
 // ---------- 問題の読み込み ----------
 async function loadProblem(id) {
   currentProblem = null;
-  resultText.textContent = "";
+  floatingConsole.hidden = true;
+  judgeBackdrop.hidden = true;
   output.textContent = "";
+  testcaseTbody.textContent = "";
 
   const response = await fetch("problems/" + id + ".json");
   if (!response.ok) {
@@ -169,17 +183,63 @@ async function loadProblem(id) {
   currentProblem = await response.json();
   titleText.textContent = currentProblem.title;
   statementText.textContent = currentProblem.statement;
+
+  if (currentProblem.starter !== undefined) {
+    codeBox.value = currentProblem.starter;
+  } else {
+    codeBox.value = "# ここにコードを書くよ！\n";
+  }
+  syncLineNumbers();
+
+  const tests = Array.isArray(currentProblem.tests) ? currentProblem.tests : [];
+  if (tests.length > 0) {
+    exampleContainer.hidden = false;
+    const t0 = tests[0];
+    let exText = "";
+    if (t0.input) exText += "【入力】\n" + t0.input + "\n\n";
+    exText += "【出力例】\n" + t0.expected;
+    exampleContent.textContent = exText;
+
+    tests.forEach((t, idx) => {
+      const tr = document.createElement("tr");
+      const tdNo = document.createElement("td");
+      tdNo.textContent = String(idx + 1);
+
+      const tdIn = document.createElement("td");
+      const codeIn = document.createElement("code");
+      codeIn.textContent = t.input || "(なし)";
+      tdIn.appendChild(codeIn);
+
+      const tdExp = document.createElement("td");
+      const codeExp = document.createElement("code");
+      codeExp.textContent = t.expected;
+      tdExp.appendChild(codeExp);
+
+      tr.append(tdNo, tdIn, tdExp);
+      testcaseTbody.appendChild(tr);
+    });
+  } else {
+    exampleContainer.hidden = true;
+  }
 }
 
-// 問題の選択欄を作る
-for (const id of PROBLEM_IDS) {
-  const option = document.createElement("option");
-  option.value = id;
-  option.textContent = id;
-  problemSelect.appendChild(option);
+// 問題の選択欄を作る（問題タイトルも表示）
+async function initProblemSelect() {
+  for (const id of PROBLEM_IDS) {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = id;
+    problemSelect.appendChild(option);
+    try {
+      const res = await fetch("problems/" + id + ".json");
+      if (res.ok) {
+        const data = await res.json();
+        option.textContent = id + " : " + data.title;
+      }
+    } catch (_) {}
+  }
+  problemSelect.addEventListener("change", () => loadProblem(problemSelect.value));
+  loadProblem(PROBLEM_IDS[0]);
 }
-problemSelect.addEventListener("change", () => loadProblem(problemSelect.value));
 
-// ---------- 開始 ----------
-createWorker();
-loadProblem(PROBLEM_IDS[0]);
+initProblemSelect();
