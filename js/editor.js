@@ -422,9 +422,9 @@ function buildFields(kind) {
           t.output = r.lines.join("\n").trim();
           t.expected.textContent = t.output || "(出力なし)";
         }
-        analysisStatus.textContent = "✅ すべてのテストケースの正解出力を生成しました！";
+        analysisStatus.textContent = "すべてのテストケースの正解出力を生成しました！";
       } catch (e) {
-        analysisStatus.textContent = "❌ 実行できませんでした: " + e.message;
+        analysisStatus.textContent = "実行できませんでした: " + e.message;
       }
       batchGenBtn.disabled = false;
       previewButton.disabled = false;

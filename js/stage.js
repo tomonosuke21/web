@@ -10,7 +10,7 @@ let currentStage = null;
 
 // ---------- クリアしたときの処理 ----------
 async function markDone() {
-  messageEl.textContent = "🎉 ステージクリア！";
+  messageEl.textContent = "ステージをクリアしました";
 
   if (currentUser === null) {
     messageEl.textContent += " (ログインすると進捗が保存されます)";
@@ -37,7 +37,7 @@ async function showNext() {
   const link = el("a");
   if (data && data.length > 0) {
     link.href = "stage.html?id=" + data[0].id;
-    link.textContent = "次のステージへ →";
+    link.textContent = "次のステージへ";
   } else {
     link.href = "quests.html";
     link.textContent = "クエスト一覧へ戻る";
@@ -144,11 +144,11 @@ function renderFill(content) {
     if (allCorrect) {
       checkButton.disabled = true;
       result.style.color = "var(--success)";
-      result.textContent = "✓ 正解！天才！";
+      result.textContent = "正解";
       markDone();
     } else {
       result.style.color = "var(--danger)";
-      result.textContent = "✕ もう一度考えてみよう";
+      result.textContent = "不正解";
     }
   });
 
@@ -257,7 +257,6 @@ function renderProblem(content, language) {
   const editor = el("textarea");
   editor.className = "ide-code-input";
   editor.spellcheck = false;
-  editor.value = content.starter || "# ここにコードを書くよ！\n";
 
   const syncLines = attachLineNumbers(editor, gutter);
   textareaWrap.append(gutter, editor);
@@ -300,7 +299,7 @@ function renderProblem(content, language) {
   backdrop.hidden = true;
   const modal = el("div");
   modal.className = "judge-modal";
-  const modalStatus = el("div", "ジャッジ中…");
+  const modalStatus = el("div", "ジャッジ中");
   modalStatus.className = "judge-modal-status running";
 
   const resTable = el("table");
@@ -341,15 +340,10 @@ function renderProblem(content, language) {
     statusBadge.textContent = "準備完了";
   });
 
-  resetBtn.addEventListener("click", () => {
-    editor.value = content.starter || "# ここにコードを書くよ！\n";
-    syncLines();
-  });
-
   runButton.addEventListener("click", async () => {
     setBusy(true);
     floatingConsole.hidden = false;
-    output.textContent = "実行中…";
+    output.textContent = "実行中";
 
     const firstIn = tests.length > 0 ? tests[0].input || "" : "";
     const r = await runner.run(editor.value, firstIn);
@@ -365,11 +359,11 @@ function renderProblem(content, language) {
     floatingConsole.hidden = true;
     backdrop.hidden = false;
     modalStatus.className = "judge-modal-status running";
-    modalStatus.textContent = "ジャッジ中… (0/" + tests.length + ")";
+    modalStatus.textContent = "ジャッジ中 (0/" + tests.length + ")";
     resTbody.textContent = "";
 
     const g = await gradeCodeWithRules(runner, editor.value, tests, requirements, (done, total) => {
-      modalStatus.textContent = "ジャッジ中… (" + done + "/" + total + ")";
+      modalStatus.textContent = "ジャッジ中 (" + done + "/" + total + ")";
     });
 
     resTbody.textContent = "";
@@ -401,11 +395,11 @@ function renderProblem(content, language) {
 
     if (g.allPassed) {
       modalStatus.className = "judge-modal-status pass";
-      modalStatus.textContent = "✓ 正解！天才！";
+      modalStatus.textContent = "正解";
       markDone();
     } else {
       modalStatus.className = "judge-modal-status fail";
-      modalStatus.textContent = "✕ 不正解 (" + g.passed + " / " + g.total + " 正解)";
+      modalStatus.textContent = "不正解(" + g.passed + " / " + g.total + " 正解)";
     }
     setBusy(false);
   });

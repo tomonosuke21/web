@@ -117,11 +117,11 @@ gradeButton.addEventListener("click", async () => {
 
   const tests = currentProblem.tests || [];
   judgeStatusEl.className = "judge-modal-status running";
-  judgeStatusEl.textContent = "ジャッジ中… (0/" + tests.length + ")";
+  judgeStatusEl.textContent = "Checking... (0/" + tests.length + ")";
   judgeTbody.textContent = "";
 
   const g = await gradeCode(runner, codeBox.value, tests, (done, total) => {
-    judgeStatusEl.textContent = "ジャッジ中… (" + done + "/" + total + ")";
+    judgeStatusEl.textContent = "Checking... (" + done + "/" + total + ")";
   });
 
   judgeTbody.textContent = "";
@@ -150,14 +150,14 @@ gradeButton.addEventListener("click", async () => {
 
   if (g.allPassed) {
     judgeStatusEl.className = "judge-modal-status pass";
-    judgeStatusEl.textContent = "✓ 正解！天才！";
+    judgeStatusEl.textContent = "正解";
     const idx = PROBLEM_IDS.indexOf(currentProblem.id);
     if (idx >= 0 && idx + 1 < PROBLEM_IDS.length) {
       nextProblemBtn.hidden = false;
     }
   } else {
     judgeStatusEl.className = "judge-modal-status fail";
-    judgeStatusEl.textContent = "✕ 不正解 (" + g.passed + " / " + g.total + " 正解)";
+    judgeStatusEl.textContent = "不正解 (" + g.passed + " / " + g.total + " 正解)";
   }
 
   const saveMessage = await saveResult(currentProblem.id, g.allPassed, codeBox.value);
@@ -187,7 +187,7 @@ async function loadProblem(id) {
   if (currentProblem.starter !== undefined) {
     codeBox.value = currentProblem.starter;
   } else {
-    codeBox.value = "# ここにコードを書くよ！\n";
+    codeBox.value = "";
   }
   syncLineNumbers();
 

@@ -83,7 +83,7 @@ async function gradeCode(runner, code, tests, onProgress) {
         passed: false,
       });
     } else if (result.hasError) {
-      messages.push(label + "❌ 実行エラー\n" + actual);
+      messages.push(label + "実行エラー\n" + actual);
       details.push({
         index: i + 1,
         input: test.input || "",
@@ -93,7 +93,7 @@ async function gradeCode(runner, code, tests, onProgress) {
       });
     } else if (actual === expected) {
       passed++;
-      messages.push(label + "✅ 正解");
+      messages.push(label + "正解");
       details.push({
         index: i + 1,
         input: test.input || "",
@@ -102,7 +102,7 @@ async function gradeCode(runner, code, tests, onProgress) {
         passed: true,
       });
     } else {
-      messages.push(label + "❌ 不正解(期待: " + expected + " / 実際: " + actual + ")");
+      messages.push(label + "不正解(期待: " + expected + " / 実際: " + actual + ")");
       details.push({
         index: i + 1,
         input: test.input || "",
@@ -152,14 +152,14 @@ async function gradeCodeWithRules(runner, code, tests, requirements, onProgress)
       }
       const missing = requirements.filter(x => !keys.has(x.type + ':' + x.name));
       if (missing.length) {
-        messages.push('構文・内容: ❌ 必須条件が不足しています: ' + missing.map(x => x.name).join('、'));
+        messages.push('構文・内容:必須条件が不足しています: ' + missing.map(x => x.name).join('、'));
       } else {
-        messages.push('構文・内容: ✅ 必須条件を満たしています');
+        messages.push('構文・内容:必須条件を満たしています');
       }
     } catch (e) {
       rulesPassed = false;
       ruleResults.push({ label: "構文解析", passed: false });
-      messages.push('構文・内容: ❌ Pythonの構文を解析できませんでした\n' + e.message);
+      messages.push('構文・内容:Pythonの構文を解析できませんでした\n' + e.message);
     }
   }
   return {

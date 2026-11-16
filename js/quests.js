@@ -1,7 +1,7 @@
 const questList = document.getElementById("quest-list");
 
 const LANGUAGE_LABELS = { python: "Python", javascript: "JavaScript" };
-const KIND_LABELS = { study: "スタディ", fill: "穴埋めテスト", problem: "練習問題" };
+const KIND_LABELS = { study: "学習", fill: "虫食い", problem: "練習問題" };
 
 // 自分がクリアしたステージのIDを返す(ログインしていなければ空)
 async function fetchDoneStageIds() {
@@ -61,7 +61,7 @@ function createQuestCard(quest) {
         const link = document.createElement("a");
         link.href = "stage.html?id=" + stage.id;
         link.textContent = KIND_LABELS[stage.kind] + ": " + stage.title;
-        item.append(doneIds.has(stage.id) ? "✅ " : "", link);
+        item.append(doneIds.has(stage.id) ? " " : "", link);
         stageList.appendChild(item);
       }
     }
