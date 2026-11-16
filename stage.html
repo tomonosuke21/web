@@ -45,6 +45,20 @@
     <p id="stage-next"></p>
   </main>
 
+  <!-- 全画面 ステージクリア表示 -->
+  <div id="stage-clear-overlay" class="stage-clear-overlay" role="dialog" aria-modal="true" hidden>
+    <div class="stage-clear-box">
+      <div class="stage-clear-badge">🎉</div>
+      <h2 class="stage-clear-title">ステージクリア！</h2>
+      <p id="stage-clear-sub" class="stage-clear-sub"></p>
+      <div class="stage-clear-actions">
+        <a id="stage-clear-next-btn" class="stage-clear-btn stage-clear-btn-primary" href="quests.html" hidden>次のステージへ →</a>
+        <a id="stage-clear-quests-btn" class="stage-clear-btn stage-clear-btn-quests" href="quests.html">クエスト一覧に戻る</a>
+        <button id="stage-clear-close-btn" type="button" class="stage-clear-btn stage-clear-btn-close">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/util.js"></script>

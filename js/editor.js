@@ -48,7 +48,6 @@ function makeTextarea(rows) {
   return t;
 }
 
-// トイプロ風エディタコンポーネントを生成（問題作成画面用）
 function createIdeEditorComponent(initialCode, onRunClick, extraToolbarButtons = []) {
   const box = el("div");
   box.className = "ide-editor-box";
@@ -93,7 +92,6 @@ function createIdeEditorComponent(initialCode, onRunClick, extraToolbarButtons =
   return { box, textarea, runBtn, statusBadge };
 }
 
-// ---------- ログイン状態に合わせて表示を切り替える ----------
 function onAuthReady() {
   const role = currentProfile ? currentProfile.role : null;
   const canAuthor = role === "author" || role === "admin";
@@ -113,7 +111,6 @@ function onAuthReady() {
   if (role === "admin") loadPendingQuests();
 }
 
-// ---------- クエストを作る ----------
 qCreate.addEventListener("click", async () => {
   const title = qTitle.value.trim();
   if (title === "") {
@@ -148,7 +145,6 @@ qCreate.addEventListener("click", async () => {
   selectQuest(data);
 });
 
-// ---------- 自分のクエスト一覧 ----------
 async function loadMyQuests() {
   const { data, error } = await db
     .from("quests")
@@ -241,7 +237,6 @@ async function deleteQuest(quest) {
   onAuthReady();
 }
 
-// ---------- ステージの編集 ----------
 function selectQuest(quest) {
   selectedQuest = quest;
   stageEditor.hidden = false;
@@ -291,7 +286,6 @@ async function deleteStage(stage) {
   loadStages();
 }
 
-// 種類ごとの入力欄を作る
 function buildFields(kind) {
   sFields.textContent = "";
   fields = {};
@@ -360,7 +354,6 @@ function buildFields(kind) {
     const criteriaBox = el("div");
     const analysisStatus = el("p", "正解例を入力して、ツールバーの「テスト実行」または下のボタンで検証できます。");
 
-    // 任意入力での単発テスト用コンソール（トイプロ風）
     const sandboxPanel = el("div");
     sandboxPanel.className = "editor-sandbox-panel";
     const sandboxHeader = el("div", "実行結果コンソール (単発テスト実行)");
@@ -381,7 +374,6 @@ function buildFields(kind) {
     sandboxBody.append(inWrap, outWrap);
     sandboxPanel.append(sandboxHeader, sandboxBody);
 
-    // ツールバーの「テスト実行」ハンドラ
     const runSingleTest = async () => {
       ideComp.runBtn.disabled = true;
       sandboxOutput.textContent = "実行中…";
@@ -398,7 +390,6 @@ function buildFields(kind) {
       ideComp.runBtn.disabled = false;
     };
 
-    // ツールバーの「全テストケース生成」ボタン
     const batchGenBtn = el("button");
     batchGenBtn.type = "button";
     batchGenBtn.className = "ide-btn ide-btn-judge";
@@ -613,7 +604,6 @@ sAdd.addEventListener("click", async () => {
   loadStages();
 });
 
-// ---------- 管理者: 承認待ちの一覧 ----------
 async function loadPendingQuests() {
   const { data, error } = await db
     .from("quests")

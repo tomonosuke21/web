@@ -1,7 +1,7 @@
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js");
 
 let pyodide = null;
-let inputLines = []; // input() が読み込む行(先頭から順に渡す)
+let inputLines = [];
 
 async function setup() {
   pyodide = await loadPyodide();
@@ -13,7 +13,6 @@ async function setup() {
     batched: (line) => postMessage({ type: "stdout", text: line }),
   });
 
-  // input() が呼ばれたら、inputLines の先頭を1行返す(なくなったら undefined)
   pyodide.setStdin({
     stdin: () => (inputLines.length > 0 ? inputLines.shift() : undefined),
   });
@@ -27,7 +26,6 @@ onmessage = async (event) => {
   if (message.type === "run") {
     inputLines = message.input ? message.input.split("\n") : [];
 
-    // 実行ごとに新しい変数の入れ物を作る(前の実行の変数を引き継がない)
     const namespace = pyodide.globals.get("dict")();
     namespace.set("__name__", "__main__");
 

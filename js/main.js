@@ -50,12 +50,10 @@ runner.whenReady().then(() => {
   updateButtons();
 });
 
-// フローティング実行結果ウィンドウの操作
 closeConsoleBtn.addEventListener("click", () => {
   floatingConsole.hidden = true;
 });
 
-// ジャッジモーダルの操作
 closeJudgeModalBtn.addEventListener("click", () => {
   judgeBackdrop.hidden = true;
 });
@@ -81,7 +79,6 @@ resetCodeButton.addEventListener("click", () => {
   syncLineNumbers();
 });
 
-// ---------- 実行ボタン（フローティング結果表示） ----------
 runButton.addEventListener("click", async () => {
   setBusy(true);
   floatingConsole.hidden = false;
@@ -105,7 +102,6 @@ runButton.addEventListener("click", async () => {
   setBusy(false);
 });
 
-// ---------- ジャッジボタン（採点モーダル表示） ----------
 gradeButton.addEventListener("click", async () => {
   if (currentProblem === null) return;
 
@@ -165,7 +161,6 @@ gradeButton.addEventListener("click", async () => {
   setBusy(false);
 });
 
-// ---------- 問題の読み込み ----------
 async function loadProblem(id) {
   currentProblem = null;
   floatingConsole.hidden = true;
@@ -223,7 +218,6 @@ async function loadProblem(id) {
   }
 }
 
-// 問題の選択欄を作る（問題タイトルも表示）
 async function initProblemSelect() {
   for (const id of PROBLEM_IDS) {
     const option = document.createElement("option");

@@ -36,17 +36,13 @@
       <span id="nickname-message"></span>
     </div>
 
-    <!-- 中央揃えの問題選択バー -->
     <div class="problem-selector-bar">
       <label for="problem-select">解く問題を選択</label>
       <select id="problem-select"></select>
     </div>
 
-    <!-- トイプロ風 2カラム IDE ワークスペース -->
     <div class="ide-workspace">
-      <!-- 左ペイン：問題文・出力例 ＋ フローティング実行結果 -->
       <section class="ide-left-pane">
-        <!-- 実行結果フローティングウィンドウ -->
         <div id="floating-console" class="floating-console" hidden>
           <div class="floating-console-header">
             <span>実行結果</span>
@@ -66,7 +62,6 @@
         </div>
       </section>
 
-      <!-- 右ペイン：ツールバー付きダークエディタ ＋ テストケース一覧 -->
       <section class="ide-right-pane">
         <div class="ide-editor-box">
           <div class="ide-toolbar">
@@ -107,7 +102,6 @@
     </div>
   </main>
 
-  <!-- トイプロ風 ジャッジ（採点）モーダル -->
   <div id="judge-modal-backdrop" class="judge-modal-backdrop" hidden>
     <div class="judge-modal" role="dialog" aria-modal="true">
       <div id="judge-modal-status" class="judge-modal-status running">

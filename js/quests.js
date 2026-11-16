@@ -3,7 +3,6 @@ const questList = document.getElementById("quest-list");
 const LANGUAGE_LABELS = { python: "Python", javascript: "JavaScript" };
 const KIND_LABELS = { study: "スタディ", fill: "穴埋めテスト", problem: "練習問題" };
 
-// 自分がクリアしたステージのIDを返す(ログインしていなければ空)
 async function fetchDoneStageIds() {
   if (currentUser === null) return new Set();
   const { data, error } = await db.from("stage_progress").select("stage_id");
@@ -14,7 +13,6 @@ async function fetchDoneStageIds() {
   return new Set(data.map((row) => row.stage_id));
 }
 
-// クエスト1件ぶんのカードを作る
 function createQuestCard(quest) {
   const card = document.createElement("section");
   card.className = "card";
@@ -72,7 +70,6 @@ function createQuestCard(quest) {
   return card;
 }
 
-// 公開済みのクエストを読み込んで、一覧にする
 async function loadQuests() {
   const { data, error } = await db
     .from("quests")
