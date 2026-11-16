@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://pgwqcwpdukhwilxlgnqg.supabase.co; style-src 'self'; img-src 'self' data:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <link rel="icon" href="data:,">
+  <title>クエスト一覧</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
+</head>
+<body>
+  <h1>クエスト一覧</h1>
+  <p><a href="index.html">問題を解く画面へ</a></p>
+
+  <div>
+    <button id="login">GitHubでログイン</button>
+    <button id="logout" hidden>ログアウト</button>
+    <span id="user"></span>
+  </div>
+
+  <div id="profile-edit" hidden>
+    <label for="nickname-input">ニックネーム(本名は使わないでください):</label>
+    <input id="nickname-input" type="text" maxlength="20">
+    <button id="nickname-save">保存</button>
+    <span id="nickname-message"></span>
+  </div>
+
+  <div id="quest-list">読み込み中…</div>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/quests.js"></script>
+</body>
+</html>
