@@ -280,7 +280,8 @@ function buildFields(kind) {
     );
   } else if (kind === "problem") {
     fields.statement = makeTextarea(3);
-    fields.starter = makeTextarea(4);
+    fields.starter = makeTextarea(8);
+    fields.starter.value = 'print("hello")';
     fields.testRows = [];
     const box = el("div");
     const addTestRow = () => {
@@ -290,15 +291,57 @@ function buildFields(kind) {
       row.append(
         el("hr"),
         labeled("入力(input() で読み込む内容。なければ空)", input),
-        labeled("期待する出力", expected)
+        labeled("正解の実行結果(output)", expected)
       );
       box.appendChild(row);
       fields.testRows.push({ input: input, expected: expected });
     };
     addTestRow();
+
+    // 作問中にPythonコードを実行して動作確認する画面
+    fields.previewInput = makeTextarea(2);
+    fields.previewOutput = el("pre");
+    fields.previewStatus = el("p", "Python実行環境を準備中…");
+    fields.previewRunner = createRunner("python");
+    const previewRunner = fields.previewRunner;
+    const previewStatus = fields.previewStatus;
+    const previewRun = fields.previewRun = makeButton("コードを実行", async () => {
+      fields.previewRun.disabled = true;
+      fields.previewOutput.textContent = "";
+      fields.previewStatus.textContent = "実行中…";
+      try {
+        const result = await previewRunner.run(fields.starter.value, fields.previewInput.value);
+        fields.previewOutput.textContent = result.lines.join("\n") || "(出力なし)";
+        if (result.timedOut) fields.previewStatus.textContent = "時間切れです";
+        else if (result.hasError) fields.previewStatus.textContent = "実行エラー";
+        else fields.previewStatus.textContent = "実行完了";
+      } catch (error) {
+        fields.previewStatus.textContent = "実行に失敗しました: " + error.message;
+      } finally {
+        fields.previewRun.disabled = false;
+      }
+    });
+    fields.previewRun.disabled = true;
+    previewRunner.whenReady().then(() => {
+      previewStatus.textContent = "Pythonを実行できます";
+      previewRun.disabled = false;
+    });
+
+    const preview = el("section");
+    preview.append(
+      el("h4", "Python実行画面（作問用の動作確認）"),
+      el("p", "上の「解答者に最初から表示するコード」を実行します。"),
+      labeled("入力(input() に渡す内容)", fields.previewInput),
+      fields.previewRun,
+      fields.previewStatus,
+      fields.previewOutput
+    );
+
     sFields.append(
+      labeled("解答者に最初から表示するコード(なくてもOK)", fields.starter),
       labeled("問題文", fields.statement),
-      labeled("最初から書いておくコード(なくてもOK)", fields.starter),
+      preview,
+      el("h4", "正解判定用テストケース"),
       box,
       makeButton("テストケースを追加", addTestRow)
     );

@@ -8,6 +8,13 @@ const nextEl = document.getElementById("stage-next");
 
 let currentStage = null;
 
+function makeStageTextarea(rows) {
+  const node = el("textarea");
+  node.rows = rows;
+  node.cols = 60;
+  return node;
+}
+
 // ---------- クリアしたときの処理 ----------
 async function markDone() {
   messageEl.textContent = "🎉 クリア!";
@@ -146,6 +153,7 @@ function renderProblem(content, language) {
   editor.cols = 60;
   editor.value = content.starter || "";
 
+  const runInput = makeStageTextarea(2);
   const runButton = el("button", "実行");
   const judgeButton = el("button", "ジャッジ");
   const status = el("p", "実行環境を準備中…");
@@ -168,11 +176,15 @@ function renderProblem(content, language) {
     result.textContent = "";
     output.textContent = "";
 
-    const r = await runner.run(editor.value, "");
-    let text = r.lines.join("\n");
-    if (r.timedOut) text += "\n時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
-    output.textContent = text.slice(0, 10000);
-    setBusy(false);
+    try {
+      const r = await runner.run(editor.value, runInput.value);
+      let text = r.lines.join("\n");
+      if (r.hasError) text += (text ? "\n" : "") + "実行エラー";
+      if (r.timedOut) text += "\n時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
+      output.textContent = text.slice(0, 10000) || "(出力なし)";
+    } finally {
+      setBusy(false);
+    }
   });
 
   judgeButton.addEventListener("click", async () => {
@@ -191,6 +203,8 @@ function renderProblem(content, language) {
   bodyEl.append(
     el("p", content.statement || ""),
     editor, el("br"),
+    el("p", "標準入力（input()で読み込む内容）"),
+    runInput, el("br"),
     runButton, judgeButton,
     status, result, output
   );
