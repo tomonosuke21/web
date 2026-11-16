@@ -1,8 +1,10 @@
+// 言語ごとの、実行用Workerのファイル
 const WORKER_FILES = { python: "js/worker.js" };
 
-const TIME_LIMIT_MS = 5000;
-const MAX_LINES = 1000;
+const TIME_LIMIT_MS = 5000; // 1回の実行の制限時間
+const MAX_LINES = 1000;     // 受け取る出力の行数の上限
 
+// 実行用の部品を作る(時間切れのときは、作り直す)
 function createRunner(language) {
   const file = WORKER_FILES[language];
   let worker = null;
@@ -30,6 +32,7 @@ function createRunner(language) {
     });
   }
 
+  // コードを1回実行して、結果を返す
   async function run(code, input) {
     await ready;
     return new Promise((resolve) => {
@@ -56,6 +59,7 @@ function createRunner(language) {
   return { run: run, whenReady: () => ready };
 }
 
+// テストケースを順に実行して、結果を詳細付きでまとめる
 async function gradeCode(runner, code, tests, onProgress) {
   const messages = [];
   const details = [];
@@ -118,6 +122,7 @@ async function gradeCode(runner, code, tests, onProgress) {
   };
 }
 
+// Pyodide標準のastモジュールでPythonコードの構造を解析する。
 async function analyzePython(runner, code) {
   const payload = JSON.stringify(code);
   const analysisCode = `import ast, json\nsource = json.loads(${JSON.stringify(payload)})\ntree = ast.parse(source)\nitems = set()\nfor node in ast.walk(tree):\n    kind = type(node).__name__\n    if kind in {'For','AsyncFor','While','If','IfExp','FunctionDef','AsyncFunctionDef','ClassDef','ListComp','SetComp','DictComp','GeneratorExp','Try','With','Lambda','Return','Break','Continue'}:\n        items.add(('syntax', kind))\n    if isinstance(node, ast.Call):\n        name = node.func.id if isinstance(node.func, ast.Name) else (node.func.attr if isinstance(node.func, ast.Attribute) else '')\n        if name: items.add(('call', name))\n    if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):\n        items.add(('variable', node.id))\n    if isinstance(node, ast.operator): items.add(('operator', type(node).__name__))\nprint(json.dumps([{'type': a, 'name': b} for a,b in sorted(items)]))`;
@@ -166,6 +171,7 @@ async function gradeCodeWithRules(runner, code, tests, requirements, onProgress)
   };
 }
 
+// 行番号シンクロ用ヘルパー
 function attachLineNumbers(textarea, gutter) {
   function sync() {
     const lines = textarea.value.split("\n").length;

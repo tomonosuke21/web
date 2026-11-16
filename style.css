@@ -287,7 +287,7 @@ label {
   white-space: pre-wrap;
 }
 
-/* 左ペインに重なるフローティング実行結果ウィンドウ */
+/* 左ペインに重なるフローティング実行結果ウィンドウ（トイプロ風） */
 .floating-console {
   position: absolute;
   top: 14px;
@@ -463,7 +463,7 @@ label {
   outline: none;
 }
 
-/* テストケース一覧テーブル */
+/* テストケース一覧テーブル（右ペイン下部） */
 .testcase-panel {
   background: var(--white);
   border: 1px solid var(--line);
@@ -507,7 +507,7 @@ label {
 }
 
 /* =========================================
-   ジャッジ（採点）モーダル
+   トイプロ風 ジャッジ（採点）モーダル
    ========================================= */
 .judge-modal-backdrop {
   position: fixed;
@@ -616,122 +616,6 @@ label {
   display: flex;
   justify-content: center;
   gap: 12px;
-}
-
-/* =========================================
-   全画面 ステージクリアオーバーレイ
-   ========================================= */
-.stage-clear-overlay {
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(24, 32, 52, 0.94) 0%, rgba(12, 17, 29, 0.98) 100%);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 2000;
-  animation: clearFadeIn 0.25s ease-out;
-}
-
-.stage-clear-overlay[hidden] {
-  display: none;
-}
-
-@keyframes clearFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.stage-clear-box {
-  text-align: center;
-  color: var(--white);
-  max-width: 600px;
-  width: 100%;
-  padding: 40px 28px;
-  animation: clearBounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes clearBounce {
-  0% { opacity: 0; transform: scale(0.75) translateY(20px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.stage-clear-badge {
-  font-size: 4rem;
-  line-height: 1;
-  margin-bottom: 16px;
-}
-
-.stage-clear-title {
-  font-size: clamp(2.4rem, 6vw, 3.8rem);
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  margin: 0 0 14px;
-  background: linear-gradient(135deg, #ffe259 0%, #ffa751 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 8px 30px rgba(255, 185, 56, 0.25);
-}
-
-.stage-clear-sub {
-  font-size: 1.05rem;
-  color: #cbd5e1;
-  margin: 0 0 32px;
-  min-height: 1.5em;
-}
-
-.stage-clear-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 14px;
-}
-
-.stage-clear-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px 26px;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.stage-clear-btn:hover {
-  text-decoration: none;
-  transform: translateY(-2px);
-}
-
-.stage-clear-btn-primary {
-  background: var(--success);
-  color: var(--white);
-}
-
-.stage-clear-btn-primary:hover {
-  background: #248a3f;
-}
-
-.stage-clear-btn-quests {
-  background: var(--accent);
-  color: var(--white);
-}
-
-.stage-clear-btn-quests:hover {
-  background: var(--accent-dark);
-}
-
-.stage-clear-btn-close {
-  background: rgba(255, 255, 255, 0.14);
-  color: var(--white);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.stage-clear-btn-close:hover {
-  background: rgba(255, 255, 255, 0.24);
 }
 
 /* =========================================

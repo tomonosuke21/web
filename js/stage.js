@@ -6,44 +6,21 @@ const bodyEl = document.getElementById("stage-body");
 const messageEl = document.getElementById("stage-message");
 const nextEl = document.getElementById("stage-next");
 
-const clearOverlay = document.getElementById("stage-clear-overlay");
-const clearSubEl = document.getElementById("stage-clear-sub");
-const clearNextBtn = document.getElementById("stage-clear-next-btn");
-const clearQuestsBtn = document.getElementById("stage-clear-quests-btn");
-const clearCloseBtn = document.getElementById("stage-clear-close-btn");
-
 let currentStage = null;
-let judgeBackdropEl = null;
-
-clearCloseBtn.addEventListener("click", () => {
-  clearOverlay.hidden = true;
-});
 
 // ---------- クリアしたときの処理 ----------
 async function markDone() {
-  let statusNote = "";
   messageEl.textContent = "🎉 ステージクリア！";
 
   if (currentUser === null) {
-    statusNote = "ログインすると進捗が保存されます";
-    messageEl.textContent += " (" + statusNote + ")";
+    messageEl.textContent += " (ログインすると進捗が保存されます)";
   } else {
     const { error } = await db.from("stage_progress").insert({ stage_id: currentStage.id });
     if (error && error.code !== "23505") {
       console.error(error);
-      statusNote = "進捗の保存に失敗しました";
-      messageEl.textContent += " (" + statusNote + ")";
-    } else {
-      statusNote = "クリア記録を保存しました！";
+      messageEl.textContent += " (保存に失敗しました)";
     }
   }
-
-  clearSubEl.textContent = statusNote;
-  if (judgeBackdropEl) {
-    judgeBackdropEl.hidden = true;
-  }
-  clearOverlay.hidden = false;
-
   await showNext();
 }
 
@@ -59,17 +36,11 @@ async function showNext() {
 
   const link = el("a");
   if (data && data.length > 0) {
-    const nextUrl = "stage.html?id=" + data[0].id;
-    link.href = nextUrl;
+    link.href = "stage.html?id=" + data[0].id;
     link.textContent = "次のステージへ →";
-
-    clearNextBtn.href = nextUrl;
-    clearNextBtn.hidden = false;
   } else {
     link.href = "quests.html";
     link.textContent = "クエスト一覧へ戻る";
-
-    clearNextBtn.hidden = true;
   }
   nextEl.textContent = "";
   nextEl.appendChild(link);
@@ -199,6 +170,7 @@ function renderProblem(content, language) {
   const requirements = Array.isArray(content.requirements) ? content.requirements : [];
   const runner = createRunner(language);
 
+  // 左ペイン
   const leftPane = el("section");
   leftPane.className = "ide-left-pane";
 
@@ -241,6 +213,7 @@ function renderProblem(content, language) {
     leftPane.append(exBox);
   }
 
+  // 右ペイン
   const rightPane = el("section");
   rightPane.className = "ide-right-pane";
 
@@ -291,6 +264,7 @@ function renderProblem(content, language) {
   editorBox.append(toolbar, textareaWrap);
   rightPane.append(editorBox);
 
+  // テストケース表
   if (tests.length > 0) {
     const tcPanel = el("div");
     tcPanel.className = "testcase-panel";
@@ -320,11 +294,10 @@ function renderProblem(content, language) {
     rightPane.append(tcPanel);
   }
 
+  // ジャッジモーダル
   const backdrop = el("div");
   backdrop.className = "judge-modal-backdrop";
   backdrop.hidden = true;
-  judgeBackdropEl = backdrop;
-
   const modal = el("div");
   modal.className = "judge-modal";
   const modalStatus = el("div", "ジャッジ中…");

@@ -8,11 +8,12 @@ const nicknameInput = document.getElementById("nickname-input");
 const nicknameSave = document.getElementById("nickname-save");
 const nicknameMessage = document.getElementById("nickname-message");
 
-let currentUser = null;
-let currentProfile = null;
+let currentUser = null;    // ログイン中のユーザー(いなければ null)
+let currentProfile = null; // プロフィール { nickname, role }
 
 const ROLE_LABELS = { student: "受講者", author: "作者", admin: "管理者" };
 
+// プロフィールをSupabaseから取ってくる
 async function loadProfile() {
   if (currentUser === null) {
     currentProfile = null;
@@ -32,6 +33,7 @@ async function loadProfile() {
   currentProfile = data;
 }
 
+// 画面の表示を、今の状態に合わせる
 function renderAuth() {
   const loggedIn = currentUser !== null;
   loginButton.hidden = loggedIn;
@@ -51,17 +53,21 @@ function renderAuth() {
   nicknameInput.value = currentProfile.nickname;
 }
 
+// ログイン状態が変わるたびに呼ばれる(ページを開いた直後も1回呼ばれる)
 db.auth.onAuthStateChange((event, session) => {
   currentUser = session ? session.user : null;
-  renderAuth();
+  renderAuth(); // まず、ログイン状態だけ反映する
 
-  setTimeout(async () => {
+  // プロフィールは少し待ってから取る
+  // (コールバックの中で直接Supabaseを呼ぶと、止まることがあるため)
+    setTimeout(async () => {
     await loadProfile();
     renderAuth();
     if (typeof onAuthReady === "function") onAuthReady();
   }, 0);
 });
 
+// GitHubでログイン
 loginButton.addEventListener("click", () => {
   db.auth.signInWithOAuth({
     provider: "github",
@@ -73,6 +79,7 @@ logoutButton.addEventListener("click", () => {
   db.auth.signOut();
 });
 
+// ニックネームを保存する
 nicknameSave.addEventListener("click", async () => {
   const name = nicknameInput.value.trim();
   if (name.length < 2 || name.length > 20) {
@@ -89,6 +96,7 @@ nicknameSave.addEventListener("click", async () => {
 
   if (error) {
     console.error(error);
+    // 23505 は「すでにその名前がある」というエラー番号
     nicknameMessage.textContent =
       error.code === "23505" ? "その名前はすでに使われています" : "保存に失敗しました";
     return;
@@ -99,6 +107,7 @@ nicknameSave.addEventListener("click", async () => {
   renderAuth();
 });
 
+// 成績を保存する(結果を、画面に出すメッセージで返す)
 async function saveResult(problemId, passed, code) {
   if (currentUser === null) {
     return "ログインすると成績が保存されます";
