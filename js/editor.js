@@ -160,7 +160,7 @@ async function loadMyQuests() {
     return;
   }
   if (data.length === 0) {
-    myQuests.textContent = "まだクエストがありません";
+    myQuests.textContent = "まだ問題がありません";
     return;
   }
 

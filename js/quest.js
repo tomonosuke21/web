@@ -28,7 +28,7 @@ async function refreshBadges() {
 
 async function loadQuest() {
   if (!Number.isInteger(questId) || questId <= 0) {
-    questTitleEl.textContent = "クエストが指定されていません";
+    questTitleEl.textContent ="問題が指定されていません";
     return;
   }
 
@@ -39,7 +39,7 @@ async function loadQuest() {
     .single();
   if (error || !quest) {
     console.error(error);
-    questTitleEl.textContent = "クエストを読み込めませんでした";
+    questTitleEl.textContent ="問題を読み込めませんでした";
     return;
   }
 

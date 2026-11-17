@@ -47,7 +47,7 @@ const gridController = createInfiniteGrid({
   gridEl: gridEl,
   statusEl: statusEl,
   pageSize: 20,
-  emptyText: "条件に一致するクエストが見つかりませんでした",
+  emptyText: "条件に一致する問題が見つかりませんでした",
   fetchPage: fetchQuestPage,
   createCard: createQuestCard,
 });
