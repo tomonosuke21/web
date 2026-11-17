@@ -1117,8 +1117,10 @@ hr {
   margin: 0 0 14px;
   background: linear-gradient(135deg, #ffe259 0%, #ffa751 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 8px 30px rgba(255, 185, 56, 0.25);
+  color: transparent;
+  filter: drop-shadow(0 8px 30px rgba(255, 185, 56, 0.25));
 }
 
 .stage-clear-sub {
