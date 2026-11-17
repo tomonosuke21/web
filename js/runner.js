@@ -69,12 +69,13 @@ async function gradeCode(runner, code, tests, onProgress) {
     if (typeof onProgress === "function") onProgress(i, tests.length);
     const test = tests[i];
     const result = await runner.run(code, test.input || "");
-    const actual = result.lines.join("\n").trim();
+    const actual = result.lines.join("
+").trim();
     const expected = String(test.expected).trim();
     const label = "ケース" + (i + 1) + ": ";
 
     if (result.timedOut) {
-      messages.push(label + "⏱ 時間切れ");
+      messages.push(label + "時間切れ");
       details.push({
         index: i + 1,
         input: test.input || "",
@@ -83,7 +84,8 @@ async function gradeCode(runner, code, tests, onProgress) {
         passed: false,
       });
     } else if (result.hasError) {
-      messages.push(label + "実行エラー\n" + actual);
+      messages.push(label + "実行エラー
+" + actual);
       details.push({
         index: i + 1,
         input: test.input || "",
@@ -125,10 +127,26 @@ async function gradeCode(runner, code, tests, onProgress) {
 // Pyodide標準のastモジュールでPythonコードの構造を解析する。
 async function analyzePython(runner, code) {
   const payload = JSON.stringify(code);
-  const analysisCode = `import ast, json\nsource = json.loads(${JSON.stringify(payload)})\ntree = ast.parse(source)\nitems = set()\nfor node in ast.walk(tree):\n    kind = type(node).__name__\n    if kind in {'For','AsyncFor','While','If','IfExp','FunctionDef','AsyncFunctionDef','ClassDef','ListComp','SetComp','DictComp','GeneratorExp','Try','With','Lambda','Return','Break','Continue'}:\n        items.add(('syntax', kind))\n    if isinstance(node, ast.Call):\n        name = node.func.id if isinstance(node.func, ast.Name) else (node.func.attr if isinstance(node.func, ast.Attribute) else '')\n        if name: items.add(('call', name))\n    if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):\n        items.add(('variable', node.id))\n    if isinstance(node, ast.operator): items.add(('operator', type(node).__name__))\nprint(json.dumps([{'type': a, 'name': b} for a,b in sorted(items)]))`;
+  const analysisCode = `import ast, json
+source = json.loads(${JSON.stringify(payload)})
+tree = ast.parse(source)
+items = set()
+for node in ast.walk(tree):
+    kind = type(node).__name__
+    if kind in {'For','AsyncFor','While','If','IfExp','FunctionDef','AsyncFunctionDef','ClassDef','ListComp','SetComp','DictComp','GeneratorExp','Try','With','Lambda','Return','Break','Continue'}:
+        items.add(('syntax', kind))
+    if isinstance(node, ast.Call):
+        name = node.func.id if isinstance(node.func, ast.Name) else (node.func.attr if isinstance(node.func, ast.Attribute) else '')
+        if name: items.add(('call', name))
+    if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+        items.add(('variable', node.id))
+    if isinstance(node, ast.operator): items.add(('operator', type(node).__name__))
+print(json.dumps([{'type': a, 'name': b} for a,b in sorted(items)]))`;
   const result = await runner.run(analysisCode, '');
-  if (result.hasError || result.timedOut) throw new Error(result.lines.join('\n') || 'コードを解析できませんでした');
-  try { return JSON.parse(result.lines.join('\n')); }
+  if (result.hasError || result.timedOut) throw new Error(result.lines.join('
+') || 'コードを解析できませんでした');
+  try { return JSON.parse(result.lines.join('
+')); }
   catch { throw new Error('構文解析の結果を読み取れませんでした'); }
 }
 
@@ -159,7 +177,8 @@ async function gradeCodeWithRules(runner, code, tests, requirements, onProgress)
     } catch (e) {
       rulesPassed = false;
       ruleResults.push({ label: "構文解析", passed: false });
-      messages.push('構文・内容:Pythonの構文を解析できませんでした\n' + e.message);
+      messages.push('構文・内容:Pythonの構文を解析できませんでした
+' + e.message);
     }
   }
   return {
@@ -174,10 +193,12 @@ async function gradeCodeWithRules(runner, code, tests, requirements, onProgress)
 // 行番号シンクロ用ヘルパー
 function attachLineNumbers(textarea, gutter) {
   function sync() {
-    const lines = textarea.value.split("\n").length;
+    const lines = textarea.value.split("
+").length;
     const nums = [];
     for (let i = 1; i <= Math.max(lines, 1); i++) nums.push(i);
-    gutter.textContent = nums.join("\n");
+    gutter.textContent = nums.join("
+");
   }
   textarea.addEventListener("input", sync);
   textarea.addEventListener("scroll", () => {

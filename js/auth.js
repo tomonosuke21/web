@@ -26,7 +26,7 @@ async function loadProfile() {
     .single();
 
   if (error) {
-    console.error(error);
+    console.error("loadProfile error:", error);
     currentProfile = null;
     return;
   }
@@ -98,29 +98,47 @@ function renderAuth() {
 
 // ポイントを加算してプロフィールを更新する
 async function addPoints(delta) {
-  if (!currentUser || !delta || delta <= 0) return null;
-  if (!currentProfile) await loadProfile();
+  const addVal = Math.floor(Number(delta) || 0);
+  if (!currentUser || addVal <= 0) return null;
 
-  const oldPts = Math.max(0, Number(currentProfile?.points) || 0);
-  const oldRank = typeof calcRank === "function" ? calcRank(oldPts) : Math.min(100, Math.floor(oldPts / 100) + 1);
-  const newPts = oldPts + delta;
-  const newRank = typeof calcRank === "function" ? calcRank(newPts) : Math.min(100, Math.floor(newPts / 100) + 1);
-
-  const { error } = await db
+  // 最新のポイントをDBから直接取得して計算ずれを防ぐ
+  const { data: latest, error: fetchError } = await db
     .from("profiles")
-    .update({ points: newPts })
-    .eq("id", currentUser.id);
+    .select("nickname, role, points")
+    .eq("id", currentUser.id)
+    .single();
 
-  if (error) {
-    console.error(error);
+  if (fetchError || !latest) {
+    console.error("ポイント取得エラー:", fetchError);
     return null;
   }
 
+  currentProfile = latest;
+  const oldPts = Math.max(0, Number(latest.points) || 0);
+  const oldRank = typeof calcRank === "function" ? calcRank(oldPts) : Math.min(100, Math.floor(oldPts / 100) + 1);
+  const newPts = oldPts + addVal;
+  const newRank = typeof calcRank === "function" ? calcRank(newPts) : Math.min(100, Math.floor(newPts / 100) + 1);
+
+  // .select("points") を付けて実際に更新された行が返るか確認する
+  const { data: updatedRows, error: updateError } = await db
+    .from("profiles")
+    .update({ points: newPts })
+    .eq("id", currentUser.id)
+    .select("points");
+
+  if (updateError || !updatedRows || updatedRows.length === 0) {
+    console.error("ポイント更新エラー(RLSポリシー等でブロックされた可能性があります):", updateError);
+    return null;
+  }
+
+  const savedPts = Math.max(0, Number(updatedRows[0].points) || newPts);
+  const finalRank = typeof calcRank === "function" ? calcRank(savedPts) : Math.min(100, Math.floor(savedPts / 100) + 1);
+
   if (currentProfile) {
-    currentProfile.points = newPts;
+    currentProfile.points = savedPts;
   }
   renderAuth();
-  return { added: delta, oldPts, newPts, oldRank, newRank };
+  return { added: addVal, oldPts, newPts: savedPts, oldRank, newRank: finalRank };
 }
 
 // ログイン状態が変わるたびに呼ばれる(ページを開いた直後も1回呼ばれる)

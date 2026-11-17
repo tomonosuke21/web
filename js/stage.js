@@ -20,10 +20,10 @@ let judgeBackdropEl = null;
 if (backLinkEl) {
   if (fromParam === "problems") {
     backLinkEl.href = "index.html";
-    backLinkEl.textContent = "← 練習問題へ戻る";
+    backLinkEl.textContent = "練習問題へ戻る";
   } else if (fromParam === "new") {
     backLinkEl.href = "new.html";
-    backLinkEl.textContent = "← 新着問題へ戻る";
+    backLinkEl.textContent = "新着問題へ戻る";
   }
 }
 
@@ -44,7 +44,8 @@ if (clearBox) {
 function calcEarnedPoints() {
   if (!currentStage || currentStage.kind === "study") return 0;
   if (fromParam === "problems" || fromParam === "new") return 10;
-  const diff = Math.min(5, Math.max(1, Number(currentStage.quests?.difficulty) || 1));
+  const questObj = Array.isArray(currentStage.quests) ? currentStage.quests[0] : currentStage.quests;
+  const diff = Math.min(5, Math.max(1, Number(questObj?.difficulty) || 1));
   return 50 * diff;
 }
 
@@ -57,29 +58,61 @@ async function markDone() {
     statusNote = "ログインすると進捗とポイントが保存されます";
     messageEl.textContent += " (" + statusNote + ")";
   } else {
-    const { error } = await db.from("stage_progress").insert({ stage_id: currentStage.id });
-    if (error && error.code === "23505") {
-      // すでにクリア済みの問題（2回目以降はポイント付与なし）
+    // すでにクリア済みか先に確認する（user_id があれば user_id でも絞り込む）
+    const { data: existing, error: checkError } = await db
+      .from("stage_progress")
+      .select("stage_id")
+      .eq("stage_id", currentStage.id)
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+
+    // user_id カラムが存在しないテーブル定義の場合のフォールバック
+    let alreadyCleared = Boolean(existing);
+    if (checkError) {
+      const { data: fallbackExisting } = await db
+        .from("stage_progress")
+        .select("stage_id")
+        .eq("stage_id", currentStage.id)
+        .maybeSingle();
+      alreadyCleared = Boolean(fallbackExisting);
+    }
+
+    if (alreadyCleared) {
       statusNote = "クリア済みのためポイント加算はありません（初回クリア時のみ獲得）";
-    } else if (error) {
-      console.error(error);
-      statusNote = "進捗の保存に失敗しました";
-      messageEl.textContent += " (" + statusNote + ")";
     } else {
-      // 初回クリア時のみポイント付与
-      const earned = calcEarnedPoints();
-      if (earned > 0 && typeof addPoints === "function") {
-        const res = await addPoints(earned);
-        if (res) {
-          statusNote = "+" + res.added + " pt 獲得！（累計: " + res.newPts + " pt / Lv." + res.newRank + "）";
-          if (res.newRank > res.oldRank) {
-            statusNote += " ランクアップ！ Lv." + res.oldRank + " → Lv." + res.newRank;
+      // stage_progress に進捗を記録（user_id を明示しつつ、不要なカラムエラー時は stage_id のみで再試行）
+      let insertRes = await db
+        .from("stage_progress")
+        .insert({ stage_id: currentStage.id, user_id: currentUser.id });
+
+      if (insertRes.error && insertRes.error.code !== "23505") {
+        insertRes = await db
+          .from("stage_progress")
+          .insert({ stage_id: currentStage.id });
+      }
+
+      if (insertRes.error && insertRes.error.code === "23505") {
+        statusNote = "クリア済みのためポイント加算はありません（初回クリア時のみ獲得）";
+      } else if (insertRes.error) {
+        console.error("stage_progress insert error:", insertRes.error);
+        statusNote = "進捗の保存に失敗しました";
+        messageEl.textContent += " (" + statusNote + ")";
+      } else {
+        // 初回クリア時のみポイント付与
+        const earned = calcEarnedPoints();
+        if (earned > 0 && typeof addPoints === "function") {
+          const res = await addPoints(earned);
+          if (res) {
+            statusNote = "+" + res.added + " pt 獲得！（累計: " + res.newPts + " pt / Lv." + res.newRank + "）";
+            if (res.newRank > res.oldRank) {
+              statusNote += " ランクアップ！ Lv." + res.oldRank + " から Lv." + res.newRank;
+            }
+          } else {
+            statusNote = "クリア記録は保存しましたが、ポイント加算の反映に失敗しました";
           }
         } else {
           statusNote = "クリア記録を保存しました！";
         }
-      } else {
-        statusNote = "クリア記録を保存しました！";
       }
     }
   }
@@ -159,7 +192,7 @@ function renderStudy(content) {
   navRow.style.gap = "12px";
   navRow.style.marginTop = "20px";
 
-  const prevButton = el("button", "← 前へ");
+  const prevButton = el("button", "前へ");
   prevButton.className = "secondary";
   const nextButton = el("button");
   navRow.append(prevButton, nextButton);
@@ -268,7 +301,7 @@ function renderProblem(content, language) {
 
   const consoleHeader = el("div");
   consoleHeader.className = "floating-console-header";
-  const closeConsoleBtn = el("button", "✕");
+  const closeConsoleBtn = el("button", "閉じる");
   closeConsoleBtn.className = "floating-console-close";
   closeConsoleBtn.addEventListener("click", () => {
     floatingConsole.hidden = true;
@@ -294,8 +327,12 @@ function renderProblem(content, language) {
     const exCode = el("pre");
     exCode.className = "example-code";
     let exText = "";
-    if (tests[0].input) exText += "【入力】\n" + tests[0].input + "\n\n";
-    exText += "【出力例】\n" + tests[0].expected;
+    if (tests[0].input) exText += "【入力】
+" + tests[0].input + "
+
+";
+    exText += "【出力例】
+" + tests[0].expected;
     exCode.textContent = exText;
     exBox.append(el("h4", "入力例 / 出力例"), exCode);
     leftPane.append(exBox);
@@ -314,17 +351,11 @@ function renderProblem(content, language) {
   const tbLeft = el("div");
   tbLeft.className = "ide-toolbar-left";
 
-  const runButton = el("button");
+  const runButton = el("button", "実行");
   runButton.className = "ide-btn ide-btn-run";
-  const runIcon = el("span", "▶");
-  runIcon.className = "icon";
-  runButton.append(runIcon, " 実行");
 
-  const judgeButton = el("button");
+  const judgeButton = el("button", "ジャッジ");
   judgeButton.className = "ide-btn ide-btn-judge";
-  const judgeIcon = el("span", "あじゃじゃ");
-  judgeIcon.className = "icon";
-  judgeButton.append(judgeIcon, " ジャッジ");
 
   tbLeft.append(runButton, judgeButton);
 
@@ -345,8 +376,16 @@ function renderProblem(content, language) {
   const editor = el("textarea");
   editor.className = "ide-code-input";
   editor.spellcheck = false;
+  if (content.starter) {
+    editor.value = content.starter;
+  }
 
   const syncLines = attachLineNumbers(editor, gutter);
+  resetBtn.addEventListener("click", () => {
+    editor.value = content.starter || "";
+    syncLines();
+  });
+
   textareaWrap.append(gutter, editor);
   editorBox.append(toolbar, textareaWrap);
   rightPane.append(editorBox);
@@ -396,8 +435,8 @@ function renderProblem(content, language) {
   resTable.className = "judge-result-table";
   const resThead = el("thead");
   const resHeadTr = el("tr");
-  const thIcon = el("th", "");
-  thIcon.style.width = "44px";
+  const thIcon = el("th", "判定");
+  thIcon.style.width = "72px";
   resHeadTr.append(thIcon, el("th", "入力"), el("th", "求める結果"), el("th", "実行結果"));
   resThead.append(resHeadTr);
   const resTbody = el("tbody");
@@ -433,12 +472,14 @@ function renderProblem(content, language) {
   runButton.addEventListener("click", async () => {
     setBusy(true);
     floatingConsole.hidden = false;
-    output.textContent = "実行中";
+    output.textContent = "実行中…";
 
     const firstIn = tests.length > 0 ? tests[0].input || "" : "";
     const r = await runner.run(editor.value, firstIn);
-    let text = r.lines.join("\n");
-    if (r.timedOut) text += "\n時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
+    let text = r.lines.join("
+");
+    if (r.timedOut) text += "
+時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
     if (!text.trim()) text = "(出力なし)";
     output.textContent = text.slice(0, 10000);
     setBusy(false);
@@ -459,7 +500,7 @@ function renderProblem(content, language) {
     resTbody.textContent = "";
     for (const rr of g.ruleResults) {
       const tr = el("tr");
-      const iconTd = el("td", rr.passed ? "正解あああ" : "不正解あああ");
+      const iconTd = el("td", rr.passed ? "正解" : "不正解");
       iconTd.className = "judge-icon-cell " + (rr.passed ? "judge-icon-ok" : "judge-icon-ng");
       const labelTd = el("td", rr.label);
       labelTd.colSpan = 3;
@@ -469,7 +510,7 @@ function renderProblem(content, language) {
 
     for (const d of g.details) {
       const tr = el("tr");
-      const iconTd = el("td", d.passed ? "正解だよん" : "不正解だよん");
+      const iconTd = el("td", d.passed ? "正解" : "不正解");
       iconTd.className = "judge-icon-cell " + (d.passed ? "judge-icon-ok" : "judge-icon-ng");
 
       const inTd = el("td", d.input !== "" ? d.input : "(なし)");
@@ -522,12 +563,13 @@ async function loadStage() {
     backLinkEl.href = "quest.html?id=" + data.quest_id;
     backLinkEl.textContent = "問題一覧へ戻る";
   }
-  titleEl.textContent = data.quests.title + " / " + data.title;
+  const questObj = Array.isArray(data.quests) ? data.quests[0] : data.quests;
+  titleEl.textContent = questObj.title + " / " + data.title;
   bodyEl.textContent = "";
 
   if (data.kind === "study") renderStudy(data.content);
   else if (data.kind === "fill") renderFill(data.content);
-  else if (data.kind === "problem") renderProblem(data.content, data.quests.language);
+  else if (data.kind === "problem") renderProblem(data.content, questObj.language);
 }
 
 loadStage();

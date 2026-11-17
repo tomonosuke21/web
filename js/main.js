@@ -94,9 +94,11 @@ runButton.addEventListener("click", async () => {
 
   const result = await runner.run(codeBox.value, firstInput);
 
-  let text = result.lines.join("\n");
+  let text = result.lines.join("
+");
   if (result.timedOut) {
-    text += "\n時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
+    text += "
+時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
   }
   if (!text.trim()) {
     text = "(出力なし)";
@@ -196,8 +198,12 @@ async function loadProblem(id) {
     exampleContainer.hidden = false;
     const t0 = tests[0];
     let exText = "";
-    if (t0.input) exText += "【入力】\n" + t0.input + "\n\n";
-    exText += "【出力例】\n" + t0.expected;
+    if (t0.input) exText += "【入力】
+" + t0.input + "
+
+";
+    exText += "【出力例】
+" + t0.expected;
     exampleContent.textContent = exText;
 
     tests.forEach((t, idx) => {

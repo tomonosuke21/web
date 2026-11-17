@@ -60,12 +60,9 @@ function createIdeEditorComponent(initialCode, onRunClick, extraToolbarButtons =
   const tbLeft = el("div");
   tbLeft.className = "ide-toolbar-left";
 
-  const runBtn = el("button");
+  const runBtn = el("button", "テスト実行");
   runBtn.type = "button";
   runBtn.className = "ide-btn ide-btn-run";
-  const icon = el("span", "▶");
-  icon.className = "icon";
-  runBtn.append(icon, " テスト実行");
   runBtn.addEventListener("click", onRunClick);
   tbLeft.append(runBtn, ...extraToolbarButtons);
 
@@ -309,15 +306,18 @@ function buildFields(kind) {
       const sandboxOut = el("pre", "(ここに実行結果が表示されます)");
       sandboxOut.className = "editor-sandbox-output";
 
-      const ideComp = createIdeEditorComponent("# コード例(なくてもOK)\n", async () => {
+      const ideComp = createIdeEditorComponent("# コード例(なくてもOK)
+", async () => {
         ideComp.runBtn.disabled = true;
         sandboxOut.textContent = "実行中…";
         try {
           if (!authorRunner) authorRunner = createRunner("python");
           await authorRunner.whenReady();
           const r = await authorRunner.run(ideComp.textarea.value, "");
-          let out = r.lines.join("\n");
-          if (r.timedOut) out += "\n時間切れです";
+          let out = r.lines.join("
+");
+          if (r.timedOut) out += "
+時間切れです";
           sandboxOut.textContent = out || "(出力なし)";
         } catch (e) {
           sandboxOut.textContent = "エラー: " + e.message;
@@ -371,7 +371,7 @@ function buildFields(kind) {
     const sandboxInput = el("textarea");
     sandboxInput.rows = 3;
     sandboxInput.placeholder = "標準入力 (input() で読み込む値があれば入力)";
-    const sandboxOutput = el("pre", "(「▶ テスト実行」を押すとここに結果が出ます)");
+    const sandboxOutput = el("pre", "(「テスト実行」を押すとここに結果が出ます)");
     sandboxOutput.className = "editor-sandbox-output";
 
     const inWrap = el("div");
@@ -389,8 +389,10 @@ function buildFields(kind) {
         if (!authorRunner) authorRunner = createRunner("python");
         await authorRunner.whenReady();
         const r = await authorRunner.run(fields.solution.value, sandboxInput.value);
-        let out = r.lines.join("\n");
-        if (r.timedOut) out += "\n時間切れです";
+        let out = r.lines.join("
+");
+        if (r.timedOut) out += "
+時間切れです";
         sandboxOutput.textContent = out || "(出力なし)";
       } catch (e) {
         sandboxOutput.textContent = "実行エラー: " + e.message;
@@ -399,14 +401,12 @@ function buildFields(kind) {
     };
 
     // ツールバーの「全テストケース生成」ボタン
-    const batchGenBtn = el("button");
+    const batchGenBtn = el("button", "全テストケースの正解出力を生成");
     batchGenBtn.type = "button";
     batchGenBtn.className = "ide-btn ide-btn-judge";
-    const bIcon = el("span", "✓");
-    bIcon.className = "icon";
-    batchGenBtn.append(bIcon, " 全テストケースの正解出力を生成");
 
-    const ideComp = createIdeEditorComponent("# 正解例のPythonコードを入力\n", runSingleTest, [batchGenBtn]);
+    const ideComp = createIdeEditorComponent("# 正解例のPythonコードを入力
+", runSingleTest, [batchGenBtn]);
     fields.solution = ideComp.textarea;
 
     const generateAllTests = async () => {
@@ -418,8 +418,10 @@ function buildFields(kind) {
         await authorRunner.whenReady();
         for (const t of fields.testRows) {
           const r = await authorRunner.run(fields.solution.value, t.input.value);
-          if (r.hasError || r.timedOut) throw new Error(r.lines.join("\n") || "実行時間切れ");
-          t.output = r.lines.join("\n").trim();
+          if (r.hasError || r.timedOut) throw new Error(r.lines.join("
+") || "実行時間切れ");
+          t.output = r.lines.join("
+").trim();
           t.expected.textContent = t.output || "(出力なし)";
         }
         analysisStatus.textContent = "すべてのテストケースの正解出力を生成しました！";
@@ -554,7 +556,8 @@ function buildContent(kind) {
 
   if (kind === "fill") {
     const template = fields.template.value.trimEnd();
-    const blanks = fields.answers.value.split("\n").map((s) => s.trim()).filter((s) => s !== "");
+    const blanks = fields.answers.value.split("
+").map((s) => s.trim()).filter((s) => s !== "");
     const blankCount = template.split("___").length - 1;
 
     if (blankCount === 0) throw new Error("コードに ___ の空欄がありません");
