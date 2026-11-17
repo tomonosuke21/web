@@ -3,141 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://pgwqcwpdukhwilxlgnqg.supabase.co; style-src 'self'; img-src 'self' data:; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
-  <title>Python学習 - 問題を解く</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
+  <title>練習問題</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
 </head>
-<body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <h1 class="site-title">Python学習</h1>
-      <nav class="site-nav">
-        <a href="index.html">練習問題</a>
-        <a href="quests.html">クエスト一覧</a>
-        <a href="editor.html">問題を作る</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="container">
-    <div class="auth-bar">
-      <div class="auth-controls">
-        <button id="login">GitHubでログイン</button>
-        <button id="logout" class="secondary" hidden>ログアウト</button>
-        <span id="user"></span>
-      </div>
-    </div>
-
-    <div id="profile-edit" hidden>
-      <label for="nickname-input">ニックネーム:</label>
-      <input id="nickname-input" type="text" maxlength="20">
-      <button id="nickname-save">保存</button>
-      <span id="nickname-message"></span>
-    </div>
-
-    <!-- 中央揃えの問題選択バー -->
-    <div class="problem-selector-bar">
-      <label for="problem-select">解く問題を選択</label>
-      <select id="problem-select"></select>
-    </div>
-
-    <!-- トイプロ風 2カラム IDE ワークスペース -->
-    <div class="ide-workspace">
-      <!-- 左ペイン：問題文・出力例 ＋ フローティング実行結果 -->
-      <section class="ide-left-pane">
-        <!-- 実行結果フローティングウィンドウ -->
-        <div id="floating-console" class="floating-console" hidden>
-          <div class="floating-console-header">
-            <span>実行結果</span>
-            <button id="close-console" class="floating-console-close" title="閉じる">✕</button>
-          </div>
-          <pre id="output" class="floating-console-body"></pre>
-        </div>
-
-        <div class="problem-header">
-          <h2 id="problem-title">読み込み中…</h2>
-        </div>
-        <p id="problem-statement" class="problem-statement"></p>
-
-        <div id="example-container" class="example-box" hidden>
-          <h4>入力例 / 出力例</h4>
-          <pre id="example-content" class="example-code"></pre>
-        </div>
-      </section>
-
-      <!-- 右ペイン：ツールバー付きダークエディタ ＋ テストケース一覧 -->
-      <section class="ide-right-pane">
-        <div class="ide-editor-box">
-          <div class="ide-toolbar">
-            <div class="ide-toolbar-left">
-              <button id="run" class="ide-btn ide-btn-run" disabled>
-                <span class="icon">▶</span> 実行
-              </button>
-              <button id="grade" class="ide-btn ide-btn-judge" disabled>
-                <span class="icon">✓</span> ジャッジ
-              </button>
-            </div>
-            <div class="ide-toolbar-right">
-              <span id="status" class="ide-status-badge">Pythonを準備中</span>
-              <button id="reset-code" class="ide-btn" title="初期コードに戻す">初期化</button>
-            </div>
-          </div>
-
-          <div class="ide-textarea-wrap">
-            <div id="line-numbers" class="ide-gutter">1</div>
-            <textarea id="code" class="ide-code-input" spellcheck="false">print("hello")</textarea>
-          </div>
-        </div>
-
-        <div class="testcase-panel">
-          <h4>テストケース一覧</h4>
-          <table class="testcase-table">
-            <thead>
-              <tr>
-                <th style="width: 50px;">No</th>
-                <th>入力 (input)</th>
-                <th>期待する結果</th>
-              </tr>
-            </thead>
-            <tbody id="testcase-tbody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <!-- トイプロ風 ジャッジ（採点）モーダル -->
-  <div id="judge-modal-backdrop" class="judge-modal-backdrop" hidden>
-    <div class="judge-modal" role="dialog" aria-modal="true">
-      <div id="judge-modal-status" class="judge-modal-status running">
-        ジャッジ中…
-      </div>
-
-      <table class="judge-result-table">
-        <thead>
-          <tr>
-            <th style="width: 44px;"></th>
-            <th>入力</th>
-            <th>期待する結果</th>
-            <th>実行結果</th>
-          </tr>
-        </thead>
-        <tbody id="judge-result-tbody"></tbody>
-      </table>
-
-      <p id="result" class="judge-save-note"></p>
-
-      <div class="judge-modal-actions">
-        <button id="close-judge-modal" class="secondary">閉じる</button>
-        <button id="next-problem-btn" class="success" hidden>次の問題へ →</button>
-      </div>
-    </div>
+<body data-page="problems">
+  <div class="page-heading">
+    <h2>練習問題</h2>
   </div>
+  <div id="problem-grid" class="card-grid"></div>
+  <p id="grid-status" class="grid-status"></p>
 
+  <script src="js/layout.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/runner.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/grid.js"></script>
+  <script src="js/problems.js"></script>
 </body>
 </html>
