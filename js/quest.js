@@ -5,7 +5,7 @@ const questInfoEl = document.getElementById("quest-info");
 const questDescEl = document.getElementById("quest-description");
 const stageListEl = document.getElementById("stage-list");
 
-const stageBadges = new Map(); // ステージID -> 「クリア済み」バッジ
+const stageBadges = new Map(); // ステージID: 「クリア済み」バッジ
 
 // 自分がクリアしたステージに、バッジを出す
 async function refreshBadges() {

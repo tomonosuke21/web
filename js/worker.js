@@ -25,8 +25,7 @@ onmessage = async (event) => {
   const message = event.data;
 
   if (message.type === "run") {
-    inputLines = message.input ? message.input.split("
-") : [];
+    inputLines = message.input ? message.input.split("\n") : [];
 
     // 実行ごとに新しい変数の入れ物を作る(前の実行の変数を引き継がない)
     const namespace = pyodide.globals.get("dict")();

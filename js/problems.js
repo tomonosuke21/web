@@ -8,8 +8,8 @@ const unsolvedCheck = document.getElementById("filter-unsolved");
 const isNewPage = document.body.dataset.page === "new";
 const fromParam = isNewPage ? "new" : "problems";
 
-const badges = new Map(); // ステージID -> 「クリア済み」バッジ
-const cards = new Map();  // ステージID -> カード要素
+const badges = new Map(); // ステージID: 「クリア済み」バッジ
+const cards = new Map();  // ステージID: カード要素
 let solvedIds = new Set();
 
 function formatDate(iso) {

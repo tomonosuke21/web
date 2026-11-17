@@ -96,12 +96,18 @@ function renderAuth() {
   }
 }
 
-// ポイントを加算してプロフィールを更新する
+// ポイントを加算する(DB側の関数 add_points を呼び、加算後のプロフィールを取り直す)
 async function addPoints(delta) {
   const addVal = Math.floor(Number(delta) || 0);
   if (!currentUser || addVal <= 0) return null;
 
-  // 最新のポイントをDBから直接取得して計算ずれを防ぐ
+  const { error: rpcError } = await db.rpc("add_points", { add_amount: addVal });
+  if (rpcError) {
+    console.error("ポイント加算エラー:", rpcError);
+    return null;
+  }
+
+  // 加算後の最新のプロフィールを取得する
   const { data: latest, error: fetchError } = await db
     .from("profiles")
     .select("nickname, role, points")
@@ -114,31 +120,13 @@ async function addPoints(delta) {
   }
 
   currentProfile = latest;
-  const oldPts = Math.max(0, Number(latest.points) || 0);
+  const newPts = Math.max(0, Number(latest.points) || 0);
+  const oldPts = Math.max(0, newPts - addVal);
   const oldRank = typeof calcRank === "function" ? calcRank(oldPts) : Math.min(100, Math.floor(oldPts / 100) + 1);
-  const newPts = oldPts + addVal;
   const newRank = typeof calcRank === "function" ? calcRank(newPts) : Math.min(100, Math.floor(newPts / 100) + 1);
 
-  // .select("points") を付けて実際に更新された行が返るか確認する
-  const { data: updatedRows, error: updateError } = await db
-    .from("profiles")
-    .update({ points: newPts })
-    .eq("id", currentUser.id)
-    .select("points");
-
-  if (updateError || !updatedRows || updatedRows.length === 0) {
-    console.error("ポイント更新エラー(RLSポリシー等でブロックされた可能性があります):", updateError);
-    return null;
-  }
-
-  const savedPts = Math.max(0, Number(updatedRows[0].points) || newPts);
-  const finalRank = typeof calcRank === "function" ? calcRank(savedPts) : Math.min(100, Math.floor(savedPts / 100) + 1);
-
-  if (currentProfile) {
-    currentProfile.points = savedPts;
-  }
   renderAuth();
-  return { added: addVal, oldPts, newPts: savedPts, oldRank, newRank: finalRank };
+  return { added: addVal, oldPts, newPts, oldRank, newRank };
 }
 
 // ログイン状態が変わるたびに呼ばれる(ページを開いた直後も1回呼ばれる)

@@ -69,8 +69,7 @@ async function gradeCode(runner, code, tests, onProgress) {
     if (typeof onProgress === "function") onProgress(i, tests.length);
     const test = tests[i];
     const result = await runner.run(code, test.input || "");
-    const actual = result.lines.join("
-").trim();
+    const actual = result.lines.join("\n").trim();
     const expected = String(test.expected).trim();
     const label = "ケース" + (i + 1) + ": ";
 
@@ -84,8 +83,7 @@ async function gradeCode(runner, code, tests, onProgress) {
         passed: false,
       });
     } else if (result.hasError) {
-      messages.push(label + "実行エラー
-" + actual);
+      messages.push(label + "実行エラー\n" + actual);
       details.push({
         index: i + 1,
         input: test.input || "",
@@ -143,10 +141,8 @@ for node in ast.walk(tree):
     if isinstance(node, ast.operator): items.add(('operator', type(node).__name__))
 print(json.dumps([{'type': a, 'name': b} for a,b in sorted(items)]))`;
   const result = await runner.run(analysisCode, '');
-  if (result.hasError || result.timedOut) throw new Error(result.lines.join('
-') || 'コードを解析できませんでした');
-  try { return JSON.parse(result.lines.join('
-')); }
+  if (result.hasError || result.timedOut) throw new Error(result.lines.join('\n') || 'コードを解析できませんでした');
+  try { return JSON.parse(result.lines.join('\n')); }
   catch { throw new Error('構文解析の結果を読み取れませんでした'); }
 }
 
@@ -177,8 +173,7 @@ async function gradeCodeWithRules(runner, code, tests, requirements, onProgress)
     } catch (e) {
       rulesPassed = false;
       ruleResults.push({ label: "構文解析", passed: false });
-      messages.push('構文・内容:Pythonの構文を解析できませんでした
-' + e.message);
+      messages.push('構文・内容:Pythonの構文を解析できませんでした\n' + e.message);
     }
   }
   return {
@@ -193,12 +188,10 @@ async function gradeCodeWithRules(runner, code, tests, requirements, onProgress)
 // 行番号シンクロ用ヘルパー
 function attachLineNumbers(textarea, gutter) {
   function sync() {
-    const lines = textarea.value.split("
-").length;
+    const lines = textarea.value.split("\n").length;
     const nums = [];
     for (let i = 1; i <= Math.max(lines, 1); i++) nums.push(i);
-    gutter.textContent = nums.join("
-");
+    gutter.textContent = nums.join("\n");
   }
   textarea.addEventListener("input", sync);
   textarea.addEventListener("scroll", () => {

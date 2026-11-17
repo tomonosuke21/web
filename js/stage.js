@@ -327,12 +327,8 @@ function renderProblem(content, language) {
     const exCode = el("pre");
     exCode.className = "example-code";
     let exText = "";
-    if (tests[0].input) exText += "【入力】
-" + tests[0].input + "
-
-";
-    exText += "【出力例】
-" + tests[0].expected;
+    if (tests[0].input) exText += "【入力】\n" + tests[0].input + "\n\n";
+    exText += "【出力例】\n" + tests[0].expected;
     exCode.textContent = exText;
     exBox.append(el("h4", "入力例 / 出力例"), exCode);
     leftPane.append(exBox);
@@ -476,10 +472,8 @@ function renderProblem(content, language) {
 
     const firstIn = tests.length > 0 ? tests[0].input || "" : "";
     const r = await runner.run(editor.value, firstIn);
-    let text = r.lines.join("
-");
-    if (r.timedOut) text += "
-時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
+    let text = r.lines.join("\n");
+    if (r.timedOut) text += "\n時間切れです(" + TIME_LIMIT_MS / 1000 + "秒)。";
     if (!text.trim()) text = "(出力なし)";
     output.textContent = text.slice(0, 10000);
     setBusy(false);
