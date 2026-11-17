@@ -1,26 +1,70 @@
 const params = new URLSearchParams(window.location.search);
 const stageId = Number(params.get("id"));
+const fromParam = params.get("from");
 
+const backLinkEl = document.getElementById("back-link");
 const titleEl = document.getElementById("stage-title");
 const bodyEl = document.getElementById("stage-body");
 const messageEl = document.getElementById("stage-message");
 const nextEl = document.getElementById("stage-next");
 
+const clearOverlay = document.getElementById("stage-clear-overlay");
+const clearSubEl = document.getElementById("stage-clear-sub");
+const clearNextBtn = document.getElementById("stage-clear-next-btn");
+const clearQuestsBtn = document.getElementById("stage-clear-quests-btn");
+const clearCloseBtn = document.getElementById("stage-clear-close-btn");
+
 let currentStage = null;
+let judgeBackdropEl = null;
+
+if (backLinkEl) {
+  if (fromParam === "problems") {
+    backLinkEl.href = "index.html";
+    backLinkEl.textContent = "← 練習問題へ戻る";
+  } else if (fromParam === "new") {
+    backLinkEl.href = "new.html";
+    backLinkEl.textContent = "← 新着問題へ戻る";
+  }
+}
+
+clearCloseBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  clearOverlay.hidden = true;
+});
+
+// オーバーレイのボックス内クリックが背景に伝播しないように保護（誤閉鎖防止）
+const clearBox = clearOverlay.querySelector(".stage-clear-box");
+if (clearBox) {
+  clearBox.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+}
 
 // ---------- クリアしたときの処理 ----------
 async function markDone() {
-  messageEl.textContent = "ステージをクリアしました";
+  let statusNote = "";
+  messageEl.textContent = "🎉 ステージクリア！";
 
   if (currentUser === null) {
-    messageEl.textContent += " (ログインすると進捗が保存されます)";
+    statusNote = "ログインすると進捗が保存されます";
+    messageEl.textContent += " (" + statusNote + ")";
   } else {
     const { error } = await db.from("stage_progress").insert({ stage_id: currentStage.id });
     if (error && error.code !== "23505") {
       console.error(error);
-      messageEl.textContent += " (保存に失敗しました)";
+      statusNote = "進捗の保存に失敗しました";
+      messageEl.textContent += " (" + statusNote + ")";
+    } else {
+      statusNote = "クリア記録を保存しました！";
     }
   }
+
+  clearSubEl.textContent = statusNote;
+  if (judgeBackdropEl) {
+    judgeBackdropEl.hidden = true;
+  }
+  clearOverlay.hidden = false;
+
   await showNext();
 }
 
@@ -35,12 +79,31 @@ async function showNext() {
     .limit(1);
 
   const link = el("a");
-  if (data && data.length > 0) {
-    link.href = "stage.html?id=" + data[0].id;
-    link.textContent = "次のステージへ";
+  const fromSuffix = fromParam ? "&from=" + encodeURIComponent(fromParam) : "";
+
+  if (fromParam === "problems") {
+    clearQuestsBtn.href = "index.html";
+    clearQuestsBtn.textContent = "練習問題一覧に戻る";
+  } else if (fromParam === "new") {
+    clearQuestsBtn.href = "new.html";
+    clearQuestsBtn.textContent = "新着問題一覧に戻る";
   } else {
-    link.href = "quests.html";
-    link.textContent = "クエスト一覧へ戻る";
+    clearQuestsBtn.href = "quest.html?id=" + currentStage.quest_id;
+    clearQuestsBtn.textContent = "クエスト詳細に戻る";
+  }
+
+  if (data && data.length > 0) {
+    const nextUrl = "stage.html?id=" + data[0].id + fromSuffix;
+    link.href = nextUrl;
+    link.textContent = "次のステージへ →";
+
+    clearNextBtn.href = nextUrl;
+    clearNextBtn.hidden = false;
+  } else {
+    link.href = clearQuestsBtn.href;
+    link.textContent = clearQuestsBtn.textContent;
+
+    clearNextBtn.hidden = true;
   }
   nextEl.textContent = "";
   nextEl.appendChild(link);
@@ -297,8 +360,10 @@ function renderProblem(content, language) {
   const backdrop = el("div");
   backdrop.className = "judge-modal-backdrop";
   backdrop.hidden = true;
+  judgeBackdropEl = backdrop;
   const modal = el("div");
   modal.className = "judge-modal";
+  modal.addEventListener("click", (e) => e.stopPropagation());
   const modalStatus = el("div", "ジャッジ中");
   modalStatus.className = "judge-modal-status running";
 
@@ -428,6 +493,10 @@ async function loadStage() {
   }
 
   currentStage = data;
+  if (backLinkEl && fromParam !== "problems" && fromParam !== "new") {
+    backLinkEl.href = "quest.html?id=" + data.quest_id;
+    backLinkEl.textContent = "← クエストへ戻る";
+  }
   titleEl.textContent = data.quests.title + " / " + data.title;
   bodyEl.textContent = "";
 

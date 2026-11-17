@@ -60,10 +60,11 @@ db.auth.onAuthStateChange((event, session) => {
 
   // プロフィールは少し待ってから取る
   // (コールバックの中で直接Supabaseを呼ぶと、止まることがあるため)
-    setTimeout(async () => {
+  setTimeout(async () => {
     await loadProfile();
     renderAuth();
     if (typeof onAuthReady === "function") onAuthReady();
+    document.dispatchEvent(new Event("auth-ready"));
   }, 0);
 });
 
