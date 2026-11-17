@@ -12,6 +12,17 @@
   <div class="page-heading">
     <h2>クエスト一覧</h2>
   </div>
+  <div class="filter-bar">
+    <input id="filter-keyword" class="filter-input" type="search" placeholder="クエストタイトル・説明で検索…">
+    <select id="filter-difficulty" class="filter-select" aria-label="難易度絞り込み">
+      <option value="">難易度: すべて</option>
+      <option value="1">1: 初級 (+50pt/問)</option>
+      <option value="2">2: 中級 (+100pt/問)</option>
+      <option value="3">3: 上級 (+150pt/問)</option>
+      <option value="4">4: 難関 (+200pt/問)</option>
+      <option value="5">5: 最難関 (+250pt/問)</option>
+    </select>
+  </div>
   <div id="quest-grid" class="card-grid"></div>
   <p id="grid-status" class="grid-status"></p>
 

@@ -1180,3 +1180,107 @@ hr {
 .stage-clear-btn-close:hover {
   background: rgba(255, 255, 255, 0.24);
 }
+
+
+/* =========================================
+   検索・フィルタバー & サイドバーランク表示 (Lv.1〜Lv.100)
+   ========================================= */
+.filter-bar {
+  max-width: 1120px;
+  margin: 0 auto 20px;
+  padding: 14px 18px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(51, 52, 70, 0.04);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-input {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.filter-select {
+  min-width: 180px;
+  font-weight: 600;
+}
+
+.filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-check input {
+  width: auto;
+  margin: 0;
+}
+
+.sidebar-rank-box {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.sidebar-rank-box[hidden] {
+  display: none;
+}
+
+.rank-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.rank-lv-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--white);
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 2px 10px;
+  border-radius: 99px;
+}
+
+.rank-pt-text {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.rank-bar-track {
+  width: 100%;
+  height: 7px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.rank-bar-fill {
+  height: 100%;
+  background: var(--success);
+  border-radius: 99px;
+  transition: width 0.25s ease;
+}
+
+.rank-sub-text {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 600;
+}

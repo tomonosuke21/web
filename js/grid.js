@@ -7,6 +7,7 @@ function createInfiniteGrid(options) {
   let loaded = 0;       // 読み込んだ件数
   let loading = false;  // 読み込み中か
   let finished = false; // 最後まで読み込んだか
+  let generation = 0;   // リセット世代管理
 
   // グリッドの下に置く目印。これが見えたら、次を読み込む
   const sentinel = document.createElement("div");
@@ -23,9 +24,11 @@ function createInfiniteGrid(options) {
   async function loadMore() {
     if (loading || finished) return;
     loading = true;
+    const myGen = generation;
     statusEl.textContent = "読み込み中…";
 
     const { data, error } = await options.fetchPage(loaded, loaded + pageSize - 1);
+    if (myGen !== generation) return;
     loading = false;
 
     if (error) {
@@ -50,5 +53,17 @@ function createInfiniteGrid(options) {
     }
   }
 
+  function reset() {
+    generation++;
+    loaded = 0;
+    loading = false;
+    finished = false;
+    gridEl.textContent = "";
+    statusEl.textContent = "";
+    observer.disconnect();
+    observer.observe(sentinel);
+  }
+
   observer.observe(sentinel);
+  return { reset };
 }

@@ -1,14 +1,27 @@
 const gridEl = document.getElementById("quest-grid");
 const statusEl = document.getElementById("grid-status");
+const keywordInput = document.getElementById("filter-keyword");
+const difficultySelect = document.getElementById("filter-difficulty");
 
 // 公開済みのクエストを、20件ずつ取る
 function fetchQuestPage(from, to) {
-  return db
+  let query = db
     .from("quests")
     .select("id, title, description, language, difficulty, minutes")
-    .eq("status", "published")
-    .order("id", { ascending: true })
-    .range(from, to);
+    .eq("status", "published");
+
+  const kw = keywordInput ? keywordInput.value.trim() : "";
+  if (kw) {
+    const safeKw = kw.replace(/[,()]/g, " ");
+    query = query.or("title.ilike.%" + safeKw + "%,description.ilike.%" + safeKw + "%");
+  }
+
+  const diff = difficultySelect ? difficultySelect.value : "";
+  if (diff) {
+    query = query.eq("difficulty", Number(diff));
+  }
+
+  return query.order("id", { ascending: true }).range(from, to);
 }
 
 function createQuestCard(quest) {
@@ -30,11 +43,22 @@ function createQuestCard(quest) {
   return card;
 }
 
-createInfiniteGrid({
+const gridController = createInfiniteGrid({
   gridEl: gridEl,
   statusEl: statusEl,
   pageSize: 20,
-  emptyText: "公開中のクエストはまだありません",
+  emptyText: "条件に一致するクエストが見つかりませんでした",
   fetchPage: fetchQuestPage,
   createCard: createQuestCard,
 });
+
+let searchTimer = null;
+if (keywordInput) {
+  keywordInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => gridController.reset(), 250);
+  });
+}
+if (difficultySelect) {
+  difficultySelect.addEventListener("change", () => gridController.reset());
+}

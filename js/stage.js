@@ -40,22 +40,47 @@ if (clearBox) {
   });
 }
 
+// 獲得できるポイントを計算する（スタディは0pt、練習問題一覧からは一律10pt、クエストの問題は50×難易度）
+function calcEarnedPoints() {
+  if (!currentStage || currentStage.kind === "study") return 0;
+  if (fromParam === "problems" || fromParam === "new") return 10;
+  const diff = Math.min(5, Math.max(1, Number(currentStage.quests?.difficulty) || 1));
+  return 50 * diff;
+}
+
 // ---------- クリアしたときの処理 ----------
 async function markDone() {
   let statusNote = "";
   messageEl.textContent = "🎉 ステージクリア！";
 
   if (currentUser === null) {
-    statusNote = "ログインすると進捗が保存されます";
+    statusNote = "ログインすると進捗とポイントが保存されます";
     messageEl.textContent += " (" + statusNote + ")";
   } else {
     const { error } = await db.from("stage_progress").insert({ stage_id: currentStage.id });
-    if (error && error.code !== "23505") {
+    if (error && error.code === "23505") {
+      // すでにクリア済みの問題（2回目以降はポイント付与なし）
+      statusNote = "クリア済みのためポイント加算はありません（初回クリア時のみ獲得）";
+    } else if (error) {
       console.error(error);
       statusNote = "進捗の保存に失敗しました";
       messageEl.textContent += " (" + statusNote + ")";
     } else {
-      statusNote = "クリア記録を保存しました！";
+      // 初回クリア時のみポイント付与
+      const earned = calcEarnedPoints();
+      if (earned > 0 && typeof addPoints === "function") {
+        const res = await addPoints(earned);
+        if (res) {
+          statusNote = "+" + res.added + " pt 獲得！（累計: " + res.newPts + " pt / Lv." + res.newRank + "）";
+          if (res.newRank > res.oldRank) {
+            statusNote += " 🎉 ランクアップ！ Lv." + res.oldRank + " → Lv." + res.newRank;
+          }
+        } else {
+          statusNote = "クリア記録を保存しました！";
+        }
+      } else {
+        statusNote = "クリア記録を保存しました！";
+      }
     }
   }
 
@@ -480,7 +505,7 @@ async function loadStage() {
 
   const { data, error } = await db
     .from("stages")
-    .select("id, quest_id, position, kind, title, content, quests(title, language)")
+    .select("id, quest_id, position, kind, title, content, quests(title, language, difficulty)")
     .eq("id", stageId)
     .single();
 

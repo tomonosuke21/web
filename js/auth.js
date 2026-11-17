@@ -9,7 +9,7 @@ const nicknameSave = document.getElementById("nickname-save");
 const nicknameMessage = document.getElementById("nickname-message");
 
 let currentUser = null;    // ログイン中のユーザー(いなければ null)
-let currentProfile = null; // プロフィール { nickname, role }
+let currentProfile = null; // プロフィール { nickname, role, points }
 
 const ROLE_LABELS = { student: "受講者", author: "作者", admin: "管理者" };
 
@@ -21,7 +21,7 @@ async function loadProfile() {
   }
   const { data, error } = await db
     .from("profiles")
-    .select("nickname, role")
+    .select("nickname, role, points")
     .eq("id", currentUser.id)
     .single();
 
@@ -40,17 +40,87 @@ function renderAuth() {
   logoutButton.hidden = !loggedIn;
   profileEdit.hidden = !loggedIn;
 
+  let rankBox = document.getElementById("sidebar-rank-box");
+  if (!rankBox && userText && userText.parentNode) {
+    rankBox = document.createElement("div");
+    rankBox.id = "sidebar-rank-box";
+    rankBox.className = "sidebar-rank-box";
+    userText.after(rankBox);
+  }
+
   if (!loggedIn) {
     userText.textContent = "ログインしていません";
+    if (rankBox) rankBox.hidden = true;
     return;
   }
   if (currentProfile === null) {
     userText.textContent = "ログイン中";
+    if (rankBox) rankBox.hidden = true;
     return;
   }
   const roleLabel = ROLE_LABELS[currentProfile.role] || "";
   userText.textContent = "ログイン中: " + currentProfile.nickname + "(" + roleLabel + ")";
   nicknameInput.value = currentProfile.nickname;
+
+  if (rankBox) {
+    const pts = Math.max(0, Number(currentProfile.points) || 0);
+    const rank = typeof calcRank === "function" ? calcRank(pts) : Math.min(100, Math.floor(pts / 100) + 1);
+    const rem = typeof calcNextRankRemaining === "function" ? calcNextRankRemaining(pts) : (rank >= 100 ? 0 : rank * 100 - pts);
+    const pct = rank >= 100 ? 100 : (pts % 100);
+
+    rankBox.hidden = false;
+    rankBox.textContent = "";
+
+    const topRow = document.createElement("div");
+    topRow.className = "rank-top-row";
+    const lvBadge = document.createElement("span");
+    lvBadge.className = "rank-lv-badge";
+    lvBadge.textContent = "Lv." + rank;
+    const ptSpan = document.createElement("span");
+    ptSpan.className = "rank-pt-text";
+    ptSpan.textContent = pts + " pt";
+    topRow.append(lvBadge, ptSpan);
+
+    const barTrack = document.createElement("div");
+    barTrack.className = "rank-bar-track";
+    const barFill = document.createElement("div");
+    barFill.className = "rank-bar-fill";
+    barFill.style.width = pct + "%";
+    barTrack.appendChild(barFill);
+
+    const subText = document.createElement("div");
+    subText.className = "rank-sub-text";
+    subText.textContent = rank >= 100 ? "MAX ランク到達 (Lv.100)" : "次のランクまであと " + rem + " pt";
+
+    rankBox.append(topRow, barTrack, subText);
+  }
+}
+
+// ポイントを加算してプロフィールを更新する
+async function addPoints(delta) {
+  if (!currentUser || !delta || delta <= 0) return null;
+  if (!currentProfile) await loadProfile();
+
+  const oldPts = Math.max(0, Number(currentProfile?.points) || 0);
+  const oldRank = typeof calcRank === "function" ? calcRank(oldPts) : Math.min(100, Math.floor(oldPts / 100) + 1);
+  const newPts = oldPts + delta;
+  const newRank = typeof calcRank === "function" ? calcRank(newPts) : Math.min(100, Math.floor(newPts / 100) + 1);
+
+  const { error } = await db
+    .from("profiles")
+    .update({ points: newPts })
+    .eq("id", currentUser.id);
+
+  if (error) {
+    console.error(error);
+    return null;
+  }
+
+  if (currentProfile) {
+    currentProfile.points = newPts;
+  }
+  renderAuth();
+  return { added: delta, oldPts, newPts, oldRank, newRank };
 }
 
 // ログイン状態が変わるたびに呼ばれる(ページを開いた直後も1回呼ばれる)
