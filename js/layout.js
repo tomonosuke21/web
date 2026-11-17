@@ -25,14 +25,14 @@
   const header = make("header", "site-header");
   const inner = make("div", "site-header-inner");
   const nav = make("nav", "site-nav");
-  nav.append(makeLink("練習問題", "index.html"), makeLink("クエスト一覧", "quests.html"));
-  inner.append(makeLink("プログラミング（仮）", "index.html", "site-title"), nav);
+  nav.append(makeLink("学習", "index.html"), makeLink("問題", "quests.html"));
+  inner.append(makeLink("プログラミング", "index.html", "site-title"), nav);
   header.appendChild(inner);
 
   // ----- サイドバー -----
   const menu = [
-    { key: "problems", label: "練習問題", href: "index.html" },
-    { key: "quests", label: "クエスト一覧", href: "quests.html" },
+    { key: "problems", label: "学習", href: "index.html" },
+    { key: "quests", label: "問題", href: "quests.html" },
     { key: "new", label: "新着問題", href: "new.html" },
     { key: "editor", label: "問題を作る", href: "editor.html" },
   ];

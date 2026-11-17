@@ -130,7 +130,7 @@ gradeButton.addEventListener("click", async () => {
 
     const iconTd = document.createElement("td");
     iconTd.className = "judge-icon-cell " + (d.passed ? "judge-icon-ok" : "judge-icon-ng");
-    iconTd.textContent = d.passed ? "✓" : "✕";
+    iconTd.textContent = d.passed ? "正解" : "不正解";
 
     const inTd = document.createElement("td");
     inTd.className = "judge-code-cell";

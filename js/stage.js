@@ -51,7 +51,7 @@ function calcEarnedPoints() {
 // ---------- クリアしたときの処理 ----------
 async function markDone() {
   let statusNote = "";
-  messageEl.textContent = "🎉 ステージクリア！";
+  messageEl.textContent = "ステージクリア！";
 
   if (currentUser === null) {
     statusNote = "ログインすると進捗とポイントが保存されます";
@@ -73,7 +73,7 @@ async function markDone() {
         if (res) {
           statusNote = "+" + res.added + " pt 獲得！（累計: " + res.newPts + " pt / Lv." + res.newRank + "）";
           if (res.newRank > res.oldRank) {
-            statusNote += " 🎉 ランクアップ！ Lv." + res.oldRank + " → Lv." + res.newRank;
+            statusNote += " ランクアップ！ Lv." + res.oldRank + " → Lv." + res.newRank;
           }
         } else {
           statusNote = "クリア記録を保存しました！";
@@ -108,19 +108,19 @@ async function showNext() {
 
   if (fromParam === "problems") {
     clearQuestsBtn.href = "index.html";
-    clearQuestsBtn.textContent = "練習問題一覧に戻る";
+    clearQuestsBtn.textContent = "学習一覧に戻る";
   } else if (fromParam === "new") {
     clearQuestsBtn.href = "new.html";
     clearQuestsBtn.textContent = "新着問題一覧に戻る";
   } else {
     clearQuestsBtn.href = "quest.html?id=" + currentStage.quest_id;
-    clearQuestsBtn.textContent = "クエスト詳細に戻る";
+    clearQuestsBtn.textContent = "問題に戻る";
   }
 
   if (data && data.length > 0) {
     const nextUrl = "stage.html?id=" + data[0].id + fromSuffix;
     link.href = nextUrl;
-    link.textContent = "次のステージへ →";
+    link.textContent = "次のステージへ";
 
     clearNextBtn.href = nextUrl;
     clearNextBtn.hidden = false;
@@ -172,7 +172,7 @@ function renderStudy(content) {
     code.hidden = !slide.code;
     counter.textContent = (index + 1) + " / " + slides.length;
     prevButton.disabled = index === 0;
-    nextButton.textContent = index === slides.length - 1 ? "完了する" : "次へ →";
+    nextButton.textContent = index === slides.length - 1 ? "完了する" : "次へ";
   }
 
   prevButton.addEventListener("click", () => {
@@ -220,7 +220,7 @@ function renderFill(content) {
     }
   });
 
-  const checkButton = el("button", "✓ 答え合わせ");
+  const checkButton = el("button", "答え合わせ");
   const result = el("p");
   result.style.fontWeight = "700";
 
@@ -322,7 +322,7 @@ function renderProblem(content, language) {
 
   const judgeButton = el("button");
   judgeButton.className = "ide-btn ide-btn-judge";
-  const judgeIcon = el("span", "✓");
+  const judgeIcon = el("span", "あじゃじゃ");
   judgeIcon.className = "icon";
   judgeButton.append(judgeIcon, " ジャッジ");
 
@@ -361,7 +361,7 @@ function renderProblem(content, language) {
     const headTr = el("tr");
     const thNo = el("th", "No");
     thNo.style.width = "50px";
-    headTr.append(thNo, el("th", "入力"), el("th", "期待する結果"));
+    headTr.append(thNo, el("th", "入力"), el("th", "求める結果"));
     thead.append(headTr);
 
     const tbody = el("tbody");
@@ -398,7 +398,7 @@ function renderProblem(content, language) {
   const resHeadTr = el("tr");
   const thIcon = el("th", "");
   thIcon.style.width = "44px";
-  resHeadTr.append(thIcon, el("th", "入力"), el("th", "期待する結果"), el("th", "実行結果"));
+  resHeadTr.append(thIcon, el("th", "入力"), el("th", "求める結果"), el("th", "実行結果"));
   resThead.append(resHeadTr);
   const resTbody = el("tbody");
   resTable.append(resThead, resTbody);
@@ -459,7 +459,7 @@ function renderProblem(content, language) {
     resTbody.textContent = "";
     for (const rr of g.ruleResults) {
       const tr = el("tr");
-      const iconTd = el("td", rr.passed ? "✓" : "✕");
+      const iconTd = el("td", rr.passed ? "正解あああ" : "不正解あああ");
       iconTd.className = "judge-icon-cell " + (rr.passed ? "judge-icon-ok" : "judge-icon-ng");
       const labelTd = el("td", rr.label);
       labelTd.colSpan = 3;
@@ -469,7 +469,7 @@ function renderProblem(content, language) {
 
     for (const d of g.details) {
       const tr = el("tr");
-      const iconTd = el("td", d.passed ? "✓" : "✕");
+      const iconTd = el("td", d.passed ? "正解だよん" : "不正解だよん");
       iconTd.className = "judge-icon-cell " + (d.passed ? "judge-icon-ok" : "judge-icon-ng");
 
       const inTd = el("td", d.input !== "" ? d.input : "(なし)");
@@ -520,7 +520,7 @@ async function loadStage() {
   currentStage = data;
   if (backLinkEl && fromParam !== "problems" && fromParam !== "new") {
     backLinkEl.href = "quest.html?id=" + data.quest_id;
-    backLinkEl.textContent = "← クエストへ戻る";
+    backLinkEl.textContent = "問題一覧へ戻る";
   }
   titleEl.textContent = data.quests.title + " / " + data.title;
   bodyEl.textContent = "";

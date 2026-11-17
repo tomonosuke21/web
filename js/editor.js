@@ -22,7 +22,7 @@ const sAdd = document.getElementById("s-add");
 const sMessage = document.getElementById("s-message");
 
 const STATUS_LABELS = { draft: "下書き", pending: "申請中", published: "公開済み" };
-const KIND_LABELS = { study: "スタディ", fill: "穴埋めテスト", problem: "練習問題" };
+const KIND_LABELS = { study: "学習", fill: "穴埋め", problem: "練習問題" };
 
 let selectedQuest = null;
 let currentStages = [];
@@ -104,7 +104,7 @@ function onAuthReady() {
   if (currentUser === null) {
     notice.textContent = "ログインしてください";
   } else if (!canAuthor) {
-    notice.textContent = "問題を作るには「作者」の権限が必要です。管理者に権限を付けてもらってください。";
+    notice.textContent = "問題を作るには「作者」の権限が必要です。管理者に権限をもらってください。";
   } else {
     notice.textContent = "";
   }
