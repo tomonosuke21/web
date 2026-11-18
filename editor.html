@@ -12,68 +12,95 @@
   <main class="container">
     <div class="page-heading">
       <h2>問題を作る</h2>
+      <p class="page-subtitle">実際の解答画面と同じレイアウトで問題文とコードを確認しながら作成できます</p>
     </div>
 
     <p id="editor-notice" class="text-center">読み込み中…</p>
 
-    <div id="editor-main" class="center-card" hidden>
-      <h2>新しい問題を作る</h2>
-      <div>
-        <label>タイトル <input id="q-title" type="text" maxlength="100"></label>
-        <label>説明 <input id="q-description" type="text" maxlength="500" size="50"></label>
-        <div class="flex-row">
-          <label>言語
-            <select id="q-language">
-              <option value="python">Python</option>
-            </select>
-          </label>
-          <label>難易度
-            <select id="q-difficulty">
-              <option value="1">初級</option>
-              <option value="2">中級</option>
-              <option value="3">上級</option>
-              <option value="4">難関</option>
-              <option value="5">最難関</option>
-            </select>
-          </label>
-          <label>所要時間(分) <input id="q-minutes" type="number" min="1" max="30" value="5"></label>
+    <div id="editor-main" hidden>
+      <!-- 上部：問題を解く画面と同じ構成のステージ作成ワークスペース -->
+      <section id="stage-editor" class="editor-workspace-section" hidden>
+        <div class="center-card stage-title-card editor-stage-header-card">
+          <div class="editor-stage-header-top">
+            <span class="editor-badge-pill">編集中</span>
+            <h2 id="stage-editor-title">ステージの編集</h2>
+          </div>
+          <div class="flex-row editor-stage-meta-row">
+            <label class="flex-1">ステージタイトル
+              <input id="s-title" type="text" maxlength="100" placeholder="例: 2つの数を足し算しよう">
+            </label>
+            <label>ステージ種類
+              <select id="s-kind">
+                <option value="problem">練習問題</option>
+                <option value="fill">穴埋めテスト</option>
+                <option value="study">スタディ</option>
+              </select>
+            </label>
+          </div>
         </div>
-        <div class="mt">
-          <button id="q-create">作成する(下書き)</button>
-          <span id="q-message"></span>
-        </div>
-      </div>
 
-      <hr>
-      <h2>作成問題</h2>
-      <div id="my-quests"></div>
-
-      <div id="stage-editor" hidden>
-        <hr>
-        <h2 id="stage-editor-title"></h2>
-        <ol id="stage-editor-list"></ol>
-
-        <h3>ステージを追加</h3>
-        <div class="flex-row">
-          <label>種類
-            <select id="s-kind">
-              <option value="study">スタディ</option>
-              <option value="fill">穴埋めテスト</option>
-              <option value="problem">練習問題</option>
-            </select>
-          </label>
-          <label>タイトル <input id="s-title" type="text" maxlength="100"></label>
-        </div>
+        <!-- 練習問題モード時はここに stage.html と同じ左右2ペイン(ide-workspace)が展開される -->
         <div id="s-fields"></div>
-        <div class="mt">
-          <button id="s-add" class="success">ステージを追加する</button>
-          <span id="s-message"></span>
+
+        <div class="center-card editor-save-bar">
+          <button id="s-add" class="success">この内容でステージを追加する</button>
+          <span id="s-message" class="status-inline-msg"></span>
         </div>
+      </section>
+
+      <!-- 下部：既存の設定要素（問題の新規作成・作成済み問題一覧・追加済みステージ一覧） -->
+      <div class="editor-lower-sections">
+        <section class="center-card">
+          <h3>新しい問題（クエスト）を作る</h3>
+          <div class="editor-form-grid">
+            <label>タイトル
+              <input id="q-title" type="text" maxlength="100" placeholder="例: Python入門 基礎編">
+            </label>
+            <label>説明
+              <input id="q-description" type="text" maxlength="500" placeholder="この問題セットで学べる内容">
+            </label>
+          </div>
+          <div class="flex-row mt">
+            <label>言語
+              <select id="q-language">
+                <option value="python">Python</option>
+              </select>
+            </label>
+            <label>難易度
+              <select id="q-difficulty">
+                <option value="1">初級</option>
+                <option value="2">中級</option>
+                <option value="3">上級</option>
+                <option value="4">難関</option>
+                <option value="5">最難関</option>
+              </select>
+            </label>
+            <label>所要時間(分)
+              <input id="q-minutes" type="number" min="1" max="30" value="5">
+            </label>
+          </div>
+          <div class="mt">
+            <button id="q-create">問題を作成する(下書き)</button>
+            <span id="q-message" class="status-inline-msg"></span>
+          </div>
+        </section>
+
+        <section class="center-card">
+          <h3>作成問題一覧</h3>
+          <p class="section-caption">編集したい問題を選択すると、上のワークスペースでステージを作成・追加できます。</p>
+          <div id="my-quests"></div>
+
+          <div id="stage-list-panel" hidden>
+            <hr>
+            <h3>追加済みのステージ一覧</h3>
+            <ol id="stage-editor-list" class="styled-list"></ol>
+          </div>
+        </section>
       </div>
     </div>
 
     <div id="admin-main" class="center-card" hidden>
-      <h2>承認待ちの問題(管理者)</h2>
+      <h3>承認待ちの問題(管理者)</h3>
       <div id="pending-quests"></div>
     </div>
   </main>

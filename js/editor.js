@@ -14,6 +14,7 @@ const qMessage = document.getElementById("q-message");
 
 const stageEditor = document.getElementById("stage-editor");
 const stageEditorTitle = document.getElementById("stage-editor-title");
+const stageListPanel = document.getElementById("stage-list-panel");
 const stageEditorList = document.getElementById("stage-editor-list");
 const sKind = document.getElementById("s-kind");
 const sTitle = document.getElementById("s-title");
@@ -22,7 +23,7 @@ const sAdd = document.getElementById("s-add");
 const sMessage = document.getElementById("s-message");
 
 const STATUS_LABELS = { draft: "下書き", pending: "申請中", published: "公開済み" };
-const KIND_LABELS = { study: "学習", fill: "穴埋め", problem: "練習問題" };
+const KIND_LABELS = { study: "スタディ", fill: "穴埋め", problem: "練習問題" };
 
 let selectedQuest = null;
 let currentStages = [];
@@ -31,6 +32,7 @@ let authorRunner = null;
 
 function makeButton(label, onClick) {
   const button = el("button", label);
+  button.type = "button";
   button.addEventListener("click", onClick);
   return button;
 }
@@ -41,53 +43,12 @@ function labeled(labelText, node) {
   return wrap;
 }
 
-function makeTextarea(rows) {
+function makeTextarea(rows, placeholder = "") {
   const t = el("textarea");
   t.rows = rows;
   t.style.width = "100%";
+  if (placeholder) t.placeholder = placeholder;
   return t;
-}
-
-// トイプロ風エディタコンポーネントを生成（問題作成画面用）
-function createIdeEditorComponent(initialCode, onRunClick, extraToolbarButtons = []) {
-  const box = el("div");
-  box.className = "ide-editor-box";
-  box.style.marginTop = "8px";
-
-  const toolbar = el("div");
-  toolbar.className = "ide-toolbar";
-
-  const tbLeft = el("div");
-  tbLeft.className = "ide-toolbar-left";
-
-  const runBtn = el("button", "テスト実行");
-  runBtn.type = "button";
-  runBtn.className = "ide-btn ide-btn-run";
-  runBtn.addEventListener("click", onRunClick);
-  tbLeft.append(runBtn, ...extraToolbarButtons);
-
-  const tbRight = el("div");
-  tbRight.className = "ide-toolbar-right";
-  const statusBadge = el("span", "Python実行環境");
-  statusBadge.className = "ide-status-badge";
-  tbRight.append(statusBadge);
-
-  toolbar.append(tbLeft, tbRight);
-
-  const wrap = el("div");
-  wrap.className = "ide-textarea-wrap";
-  const gutter = el("div", "1");
-  gutter.className = "ide-gutter";
-  const textarea = el("textarea");
-  textarea.className = "ide-code-input";
-  textarea.spellcheck = false;
-  textarea.value = initialCode || "";
-
-  attachLineNumbers(textarea, gutter);
-  wrap.append(gutter, textarea);
-  box.append(toolbar, wrap);
-
-  return { box, textarea, runBtn, statusBadge };
 }
 
 // ---------- ログイン状態に合わせて表示を切り替える ----------
@@ -138,7 +99,7 @@ qCreate.addEventListener("click", async () => {
     return;
   }
 
-  qMessage.textContent = "作成しました。下でステージを追加してください";
+  qMessage.textContent = "作成しました。上のワークスペースでステージを追加できます";
   qTitle.value = "";
   qDescription.value = "";
   await loadMyQuests();
@@ -160,32 +121,56 @@ async function loadMyQuests() {
     return;
   }
   if (data.length === 0) {
-    myQuests.textContent = "まだ問題がありません";
+    myQuests.textContent = "まだ問題がありません。上のフォームから作成してください。";
     return;
   }
 
   const list = el("ul");
+  list.className = "styled-list";
   for (const quest of data) list.appendChild(createMyQuestItem(quest));
   myQuests.appendChild(list);
+
+  // 未選択なら最新の未公開クエストを自動的に選択状態にしてすぐ作問できるようにする
+  if (!selectedQuest) {
+    const editable = data.find((q) => q.status !== "published");
+    if (editable) selectQuest(editable);
+  }
 }
 
 function createMyQuestItem(quest) {
-  const item = el("li", quest.title + " (" + STATUS_LABELS[quest.status] + ") ");
+  const item = el("li");
+  item.className = "quest-manage-item";
+
+  const info = el("span", quest.title + " ");
+  info.className = "quest-manage-title";
+  const badge = el("span", STATUS_LABELS[quest.status]);
+  badge.className = "status-pill status-" + quest.status;
+  info.appendChild(badge);
+
+  const actions = el("div");
+  actions.className = "quest-manage-actions";
 
   if (quest.status !== "published") {
-    item.appendChild(makeButton("ステージを編集", () => selectQuest(quest)));
+    actions.appendChild(makeButton("ステージを編集", () => {
+      selectQuest(quest);
+      stageEditor.scrollIntoView({ behavior: "smooth" });
+    }));
   }
   if (quest.status === "draft") {
-    item.appendChild(makeButton("申請する", () => submitQuest(quest)));
+    const subBtn = makeButton("申請する", () => submitQuest(quest));
+    subBtn.className = "success";
+    actions.appendChild(subBtn);
     const delBtn = makeButton("削除", () => deleteQuest(quest));
     delBtn.className = "secondary";
-    item.appendChild(delBtn);
+    actions.appendChild(delBtn);
   }
   if (quest.status === "pending") {
     const backBtn = makeButton("下書きに戻す", () => changeStatus(quest, "draft"));
     backBtn.className = "secondary";
-    item.appendChild(backBtn);
+    actions.appendChild(backBtn);
   }
+
+  item.append(info, actions);
   return item;
 }
 
@@ -234,6 +219,7 @@ async function deleteQuest(quest) {
   if (selectedQuest !== null && selectedQuest.id === quest.id) {
     selectedQuest = null;
     stageEditor.hidden = true;
+    stageListPanel.hidden = true;
   }
   onAuthReady();
 }
@@ -242,7 +228,8 @@ async function deleteQuest(quest) {
 function selectQuest(quest) {
   selectedQuest = quest;
   stageEditor.hidden = false;
-  stageEditorTitle.textContent = "ステージの編集: " + quest.title;
+  stageListPanel.hidden = false;
+  stageEditorTitle.textContent = quest.title;
   sMessage.textContent = "";
   buildFields(sKind.value);
   loadStages();
@@ -263,15 +250,27 @@ async function loadStages() {
   }
 
   currentStages = data;
+  if (data.length === 0) {
+    const empty = el("li", "まだステージがありません");
+    empty.style.color = "var(--text-secondary)";
+    stageEditorList.appendChild(empty);
+    return;
+  }
+
   for (const stage of data) {
-    const item = el("li", KIND_LABELS[stage.kind] + ": " + stage.title + " ");
-    const link = el("a", "試す");
+    const item = el("li");
+    item.className = "quest-manage-item";
+    const info = el("span", KIND_LABELS[stage.kind] + " : " + stage.title);
+    const actions = el("div");
+    actions.className = "quest-manage-actions";
+    const link = el("a", "プレビュー");
     link.href = "stage.html?id=" + stage.id;
     link.target = "_blank";
     link.rel = "noopener";
     const delBtn = makeButton("削除", () => deleteStage(stage));
     delBtn.className = "secondary";
-    item.append(link, " ", delBtn);
+    actions.append(link, delBtn);
+    item.append(info, actions);
     stageEditorList.appendChild(item);
   }
 }
@@ -288,167 +287,260 @@ async function deleteStage(stage) {
   loadStages();
 }
 
-// 種類ごとの入力欄を作る
+// ---------- 種類ごとの入力欄（練習問題は解答画面と同じ2ペイン構成） ----------
 function buildFields(kind) {
   sFields.textContent = "";
   fields = {};
 
-  if (kind === "study") {
-    fields.slideRows = [];
-    const box = el("div");
-    const addSlideRow = () => {
-      const title = el("input");
-      title.type = "text";
-      title.maxLength = 100;
-      title.style.width = "100%";
-      const text = makeTextarea(3);
-
-      const sandboxOut = el("pre", "(ここに実行結果が表示されます)");
-      sandboxOut.className = "editor-sandbox-output";
-
-      const ideComp = createIdeEditorComponent("# コード例(なくてもOK)\n", async () => {
-        ideComp.runBtn.disabled = true;
-        sandboxOut.textContent = "実行中…";
-        try {
-          if (!authorRunner) authorRunner = createRunner("python");
-          await authorRunner.whenReady();
-          const r = await authorRunner.run(ideComp.textarea.value, "");
-          let out = r.lines.join("\n");
-          if (r.timedOut) out += "\n時間切れです";
-          sandboxOut.textContent = out || "(出力なし)";
-        } catch (e) {
-          sandboxOut.textContent = "エラー: " + e.message;
-        }
-        ideComp.runBtn.disabled = false;
-      });
-      ideComp.textarea.style.minHeight = "140px";
-
-      const row = el("div");
-      row.className = "card";
-      row.append(
-        el("h4", "スライド " + (fields.slideRows.length + 1)),
-        labeled("スライドのタイトル", title),
-        labeled("説明", text),
-        el("label", "コード例(実行環境で動作確認できます)"),
-        ideComp.box,
-        el("label", "実行結果プレビュー"),
-        sandboxOut
-      );
-      box.appendChild(row);
-      fields.slideRows.push({ title: title, text: text, code: ideComp.textarea });
-    };
-    addSlideRow();
-    sFields.append(box, makeButton("スライドを追加", addSlideRow));
-  } else if (kind === "fill") {
-    fields.statement = makeTextarea(2);
-    fields.template = makeTextarea(4);
-    fields.answers = makeTextarea(3);
-    sFields.append(
-      labeled("問題文", fields.statement),
-      labeled("コード(空欄は ___ とアンダーバー3つで書く)", fields.template),
-      labeled("答え(空欄の順に、1行に1つ)", fields.answers)
-    );
-  } else if (kind === "problem") {
-    fields.statement = makeTextarea(3);
-    fields.starter = makeTextarea(4);
+  if (kind === "problem") {
     fields.testRows = [];
     fields.requirements = [];
-    const testBox = el("div");
+    fields.candidates = [];
+
+    // ====================================================
+    // 1. 上部：問題を解く画面(stage.html)と同一の左右2ペイン構成
+    // ====================================================
+    const workspace = el("div");
+    workspace.className = "ide-workspace";
+
+    // --- 左ペイン：問題文編集＆プレビュー（出力例は非表示） ---
+    const leftPane = el("section");
+    leftPane.className = "ide-left-pane";
+
+    // フローティング実行結果ウィンドウ（stage.htmlと同じ構造）
+    const floatingConsole = el("div");
+    floatingConsole.className = "floating-console";
+    floatingConsole.hidden = true;
+
+    const consoleHeader = el("div");
+    consoleHeader.className = "floating-console-header";
+    const closeConsoleBtn = el("button", "閉じる");
+    closeConsoleBtn.type = "button";
+    closeConsoleBtn.className = "floating-console-close";
+    closeConsoleBtn.addEventListener("click", () => {
+      floatingConsole.hidden = true;
+    });
+    consoleHeader.append(el("span", "テスト実行結果"), closeConsoleBtn);
+
+    const consoleOutput = el("pre");
+    consoleOutput.className = "floating-console-body";
+    floatingConsole.append(consoleHeader, consoleOutput);
+
+    const probHeader = el("div");
+    probHeader.className = "problem-header";
+    const previewTitle = el("h2", sTitle.value.trim() || "練習問題（タイトル未入力）");
+    probHeader.append(previewTitle);
+
+    sTitle.oninput = () => {
+      previewTitle.textContent = sTitle.value.trim() || "練習問題（タイトル未入力）";
+    };
+
+    const stmtLabel = el("label", "問題文（学習者に表示されます）");
+    stmtLabel.style.marginTop = "0";
+    fields.statement = makeTextarea(10, "例: 2つの整数が1行ずつ入力されます。合計を出力してください。");
+    fields.statement.className = "editor-statement-input";
+
+    // 入力例のみ表示（出力例は非表示）
+    const inputPreviewBox = el("div");
+    inputPreviewBox.className = "example-box";
+    const inputPreviewCode = el("pre", "(テストケース1の入力がここに反映されます)");
+    inputPreviewCode.className = "example-code";
+    inputPreviewBox.append(el("h4", "入力例（テストケース1）"), inputPreviewCode);
+
+    leftPane.append(floatingConsole, probHeader, stmtLabel, fields.statement, inputPreviewBox);
+
+    // --- 右ペイン：ダークコードエディタ ＋ テストケース入力テーブル ---
+    const rightPane = el("section");
+    rightPane.className = "ide-right-pane";
+
+    const editorBox = el("div");
+    editorBox.className = "ide-editor-box";
+
+    const toolbar = el("div");
+    toolbar.className = "ide-toolbar";
+
+    const tbLeft = el("div");
+    tbLeft.className = "ide-toolbar-left";
+
+    const runBtn = el("button", "実行テスト");
+    runBtn.type = "button";
+    runBtn.className = "ide-btn ide-btn-run";
+
+    const verifyAllBtn = el("button", "全ケース検証");
+    verifyAllBtn.type = "button";
+    verifyAllBtn.className = "ide-btn ide-btn-judge";
+
+    tbLeft.append(runBtn, verifyAllBtn);
+
+    const tbRight = el("div");
+    tbRight.className = "ide-toolbar-right";
+    const statusBadge = el("span", "正解例コード（非公開）");
+    statusBadge.className = "ide-status-badge";
+    tbRight.append(statusBadge);
+
+    toolbar.append(tbLeft, tbRight);
+
+    const textareaWrap = el("div");
+    textareaWrap.className = "ide-textarea-wrap";
+    const gutter = el("div", "1");
+    gutter.className = "ide-gutter";
+    const solutionEditor = el("textarea");
+    solutionEditor.className = "ide-code-input";
+    solutionEditor.spellcheck = false;
+    solutionEditor.value = "# 正解例のPythonコードを入力\n";
+    fields.solution = solutionEditor;
+
+    attachLineNumbers(solutionEditor, gutter);
+    textareaWrap.append(gutter, solutionEditor);
+    editorBox.append(toolbar, textareaWrap);
+    rightPane.appendChild(editorBox);
+
+    // テストケーステーブル（出力例は画面に表示せず、入力のみ設定・状態バッジ表示）
+    const tcPanel = el("div");
+    tcPanel.className = "testcase-panel";
+    const tcHeaderRow = el("div");
+    tcHeaderRow.className = "testcase-panel-header";
+    tcHeaderRow.append(el("h4", "テストケース（入力値）"));
+
+    const addCaseBtn = makeButton("+ ケース追加", () => addTestRow());
+    addCaseBtn.className = "secondary";
+    addCaseBtn.style.padding = "5px 12px";
+    addCaseBtn.style.fontSize = "0.82rem";
+    tcHeaderRow.appendChild(addCaseBtn);
+
+    const table = el("table");
+    table.className = "testcase-table";
+    const thead = el("thead");
+    const headTr = el("tr");
+    const thNo = el("th", "No");
+    thNo.style.width = "46px";
+    const thStatus = el("th", "検証状態");
+    thStatus.style.width = "96px";
+    headTr.append(thNo, el("th", "入力 (input() で読み込む値 / なければ空)"), thStatus);
+    thead.appendChild(headTr);
+
+    const tbody = el("tbody");
+    table.append(thead, tbody);
+    tcPanel.append(tcHeaderRow, table);
+    rightPane.appendChild(tcPanel);
+
+    workspace.append(leftPane, rightPane);
+
+    // ====================================================
+    // 2. 下部：その下にこれまでの構成要素（初期コード・必須構文条件）を配置
+    // ====================================================
+    const lowerConfigCard = el("div");
+    lowerConfigCard.className = "center-card editor-subconfig-card";
+
+    const analysisStatus = el("p", "正解例コードを入力し、「全ケース検証」でテストケースの動作確認ができます（出力例は表示されません）。");
+    analysisStatus.className = "section-caption";
+
     const criteriaBox = el("div");
-    const analysisStatus = el("p", "正解例を入力して、ツールバーの「テスト実行」または下のボタンで検証できます。");
 
-    // 任意入力での単発テスト用コンソール（トイプロ風）
-    const sandboxPanel = el("div");
-    sandboxPanel.className = "editor-sandbox-panel";
-    const sandboxHeader = el("div", "実行結果コンソール (単発テスト実行)");
-    sandboxHeader.className = "editor-sandbox-header";
-    const sandboxBody = el("div");
-    sandboxBody.className = "editor-sandbox-body";
+    const addTestRow = () => {
+      const idx = fields.testRows.length;
+      const tr = el("tr");
+      const tdNo = el("td", String(idx + 1));
 
-    const sandboxInput = el("textarea");
-    sandboxInput.rows = 3;
-    sandboxInput.placeholder = "標準入力 (input() で読み込む値があれば入力)";
-    const sandboxOutput = el("pre", "(「テスト実行」を押すとここに結果が出ます)");
-    sandboxOutput.className = "editor-sandbox-output";
+      const tdIn = el("td");
+      const inputArea = el("textarea");
+      inputArea.rows = 2;
+      inputArea.style.width = "100%";
+      inputArea.placeholder = "例: 3\n5";
+      tdIn.appendChild(inputArea);
 
-    const inWrap = el("div");
-    inWrap.append(el("div", "標準入力 (任意)"), sandboxInput);
-    const outWrap = el("div");
-    outWrap.append(el("div", "標準出力"), sandboxOutput);
-    sandboxBody.append(inWrap, outWrap);
-    sandboxPanel.append(sandboxHeader, sandboxBody);
+      // 出力例そのものは表示せず、検証済みかどうかだけ内部保持＋状態ラベル表示
+      const tdState = el("td");
+      const stateBadge = el("span", "未検証");
+      stateBadge.className = "tc-state-badge pending";
+      tdState.appendChild(stateBadge);
 
-    // ツールバーの「テスト実行」ハンドラ
-    const runSingleTest = async () => {
-      ideComp.runBtn.disabled = true;
-      sandboxOutput.textContent = "実行中…";
+      const rowObj = { input: inputArea, stateBadge, output: null };
+
+      inputArea.addEventListener("input", () => {
+        rowObj.output = null;
+        stateBadge.textContent = "未検証";
+        stateBadge.className = "tc-state-badge pending";
+        if (idx === 0) {
+          inputPreviewCode.textContent = inputArea.value || "(入力なし)";
+        }
+      });
+
+      tr.append(tdNo, tdIn, tdState);
+      tbody.appendChild(tr);
+      fields.testRows.push(rowObj);
+    };
+
+    solutionEditor.addEventListener("input", () => {
+      for (const t of fields.testRows) {
+        t.output = null;
+        t.stateBadge.textContent = "未検証";
+        t.stateBadge.className = "tc-state-badge pending";
+      }
+    });
+
+    // 単発実行テスト（テストケース1の入力を使ってフローティングコンソールに表示）
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true;
+      verifyAllBtn.disabled = true;
+      floatingConsole.hidden = false;
+      consoleOutput.textContent = "実行中…";
       try {
         if (!authorRunner) authorRunner = createRunner("python");
         await authorRunner.whenReady();
-        const r = await authorRunner.run(fields.solution.value, sandboxInput.value);
+        const firstIn = fields.testRows.length > 0 ? fields.testRows[0].input.value : "";
+        const r = await authorRunner.run(solutionEditor.value, firstIn);
         let out = r.lines.join("\n");
         if (r.timedOut) out += "\n時間切れです";
-        sandboxOutput.textContent = out || "(出力なし)";
+        consoleOutput.textContent = out || "(出力なし)";
       } catch (e) {
-        sandboxOutput.textContent = "実行エラー: " + e.message;
+        consoleOutput.textContent = "エラー: " + e.message;
       }
-      ideComp.runBtn.disabled = false;
-    };
+      runBtn.disabled = false;
+      verifyAllBtn.disabled = false;
+    });
 
-    // ツールバーの「全テストケース生成」ボタン
-    const batchGenBtn = el("button", "全テストケースの正解出力を生成");
-    batchGenBtn.type = "button";
-    batchGenBtn.className = "ide-btn ide-btn-judge";
-
-    const ideComp = createIdeEditorComponent("# 正解例のPythonコードを入力\n", runSingleTest, [batchGenBtn]);
-    fields.solution = ideComp.textarea;
-
-    const generateAllTests = async () => {
-      batchGenBtn.disabled = true;
-      previewButton.disabled = true;
-      analysisStatus.textContent = "テストケース実行中…";
+    // 全テストケース検証（出力例はUIには出さず内部の expected として確定）
+    const verifyAllCases = async () => {
+      verifyAllBtn.disabled = true;
+      runBtn.disabled = true;
+      analysisStatus.textContent = "全テストケースを実行・検証中…";
       try {
         if (!authorRunner) authorRunner = createRunner("python");
         await authorRunner.whenReady();
         for (const t of fields.testRows) {
-          const r = await authorRunner.run(fields.solution.value, t.input.value);
-          if (r.hasError || r.timedOut) throw new Error(r.lines.join("\n") || "実行時間切れ");
+          const r = await authorRunner.run(solutionEditor.value, t.input.value);
+          if (r.hasError || r.timedOut) {
+            t.output = null;
+            t.stateBadge.textContent = "エラー";
+            t.stateBadge.className = "tc-state-badge error";
+            throw new Error(r.lines.join("\n") || "実行時間切れ");
+          }
           t.output = r.lines.join("\n").trim();
-          t.expected.textContent = t.output || "(出力なし)";
+          t.stateBadge.textContent = "検証OK";
+          t.stateBadge.className = "tc-state-badge ok";
         }
-        analysisStatus.textContent = "すべてのテストケースの正解出力を生成しました！";
+        analysisStatus.textContent = "すべてのテストケースの検証が完了しました。";
       } catch (e) {
-        analysisStatus.textContent = "実行できませんでした: " + e.message;
+        analysisStatus.textContent = "検証エラー: " + e.message;
       }
-      batchGenBtn.disabled = false;
-      previewButton.disabled = false;
+      verifyAllBtn.disabled = false;
+      runBtn.disabled = false;
     };
 
-    batchGenBtn.addEventListener("click", generateAllTests);
+    verifyAllBtn.addEventListener("click", verifyAllCases);
 
-    const addTestRow = () => {
-      const input = makeTextarea(2);
-      const expected = el("p", "未生成");
-      expected.className = "generated-output";
-      const row = el("section");
-      row.className = "test-case card";
-      row.append(
-        el("h4", "テストケース " + (fields.testRows.length + 1)),
-        labeled("入力(input()で読み込む内容。なければ空)", input),
-        el("span", "正解出力: "),
-        expected
-      );
-      testBox.appendChild(row);
-      fields.testRows.push({ input, expected, output: null });
-    };
+    // 初期コード欄
+    fields.starter = makeTextarea(4, "# 学習者のエディタに最初から表示しておくコード（任意）");
 
-    const analyzeButton = makeButton("正解例を解析して条件候補を抽出", async () => {
+    // 構文・内容の必須条件抽出
+    const analyzeButton = makeButton("正解例を解析して必須条件候補を抽出", async () => {
       analyzeButton.disabled = true;
-      analysisStatus.textContent = "解析中…";
+      analysisStatus.textContent = "コードを解析中…";
       try {
         if (!authorRunner) authorRunner = createRunner("python");
         await authorRunner.whenReady();
-        const candidates = await analyzePython(authorRunner, fields.solution.value);
+        const candidates = await analyzePython(authorRunner, solutionEditor.value);
         fields.candidates = candidates;
         fields.requirements = [];
         renderCriteria(criteriaBox, candidates);
@@ -459,10 +551,8 @@ function buildFields(kind) {
       analyzeButton.disabled = false;
     });
 
-    const previewButton = makeButton("正解例を実行してテスト出力を生成", generateAllTests);
-
     const addRuleType = el("select");
-    for (const [v, label] of [["syntax","構文"],["call","関数・命令"],["variable","変数名"],["operator","演算子"]]) {
+    for (const [v, label] of [["syntax", "構文"], ["call", "関数・命令"], ["variable", "変数名"], ["operator", "演算子"]]) {
       const opt = el("option", label);
       opt.value = v;
       addRuleType.appendChild(opt);
@@ -472,61 +562,121 @@ function buildFields(kind) {
     const addRuleButton = makeButton("条件を追加", () => {
       const rule = { type: addRuleType.value, name: addRuleName.value.trim() };
       if (!rule.name) return;
-      if (!fields.requirements.some(x => x.type === rule.type && x.name === rule.name)) fields.requirements.push(rule);
-      const all = [...(fields.candidates || []), ...fields.requirements].filter((x, i, a) => a.findIndex(y => y.type === x.type && y.name === x.name) === i);
+      if (!fields.requirements.some((x) => x.type === rule.type && x.name === rule.name)) {
+        fields.requirements.push(rule);
+      }
+      const all = [...(fields.candidates || []), ...fields.requirements].filter(
+        (x, i, a) => a.findIndex((y) => y.type === x.type && y.name === x.name) === i
+      );
       renderCriteria(criteriaBox, all);
       addRuleName.value = "";
     });
 
-    const btnBar = el("div");
-    btnBar.className = "editor-test-bar";
-    btnBar.append(previewButton, analyzeButton);
-
     const ruleAddBar = el("div");
-    ruleAddBar.style.display = "flex";
-    ruleAddBar.style.flexWrap = "wrap";
-    ruleAddBar.style.gap = "8px";
-    ruleAddBar.style.marginTop = "8px";
+    ruleAddBar.className = "flex-row mt";
     ruleAddBar.append(addRuleType, addRuleName, addRuleButton);
 
+    const analyzeWrap = el("div");
+    analyzeWrap.appendChild(analyzeButton);
+
     addTestRow();
-    sFields.append(
-      labeled("問題文", fields.statement),
-      labeled("最初から書いておくコード(なくてもOK)", fields.starter),
-      el("h3", "正解例のPythonコード（実行環境で動作確認できます）"),
-      ideComp.box,
-      sandboxPanel,
-      el("p", "※ 正解例は作者用です。学習者には表示されません。"),
-      btnBar,
+
+    lowerConfigCard.append(
+      el("h3", "追加オプション・必須条件設定"),
       analysisStatus,
-      el("h3", "テストケース"),
-      testBox,
-      makeButton("テストケースを追加", addTestRow),
-      el("h3", "構文・内容の必須条件"),
-      el("p", "自動抽出した候補からチェックするか、独自条件を追加できます。"),
+      labeled("最初から書いておくコード（なくてもOK）", fields.starter),
+      el("hr"),
+      el("h4", "構文・内容の必須条件"),
+      el("p", "正解例から自動抽出した候補にチェックを入れるか、独自条件を追加できます。"),
+      analyzeWrap,
       criteriaBox,
       ruleAddBar
     );
+
+    sFields.append(workspace, lowerConfigCard);
+    return;
+  }
+
+  // ---------- スタディモード ----------
+  if (kind === "study") {
+    const card = el("div");
+    card.className = "center-card";
+    fields.slideRows = [];
+    const box = el("div");
+
+    const addSlideRow = () => {
+      const title = el("input");
+      title.type = "text";
+      title.maxLength = 100;
+      title.style.width = "100%";
+      const text = makeTextarea(3);
+
+      const codeArea = makeTextarea(5, "# コード例（任意）");
+      codeArea.style.fontFamily = "var(--font-mono)";
+
+      const row = el("section");
+      row.className = "card";
+      row.append(
+        el("h4", "スライド " + (fields.slideRows.length + 1)),
+        labeled("スライドのタイトル", title),
+        labeled("説明", text),
+        labeled("コード例（出力例は表示されません）", codeArea)
+      );
+      box.appendChild(row);
+      fields.slideRows.push({ title: title, text: text, code: codeArea });
+    };
+
+    addSlideRow();
+    card.append(box, makeButton("スライドを追加", addSlideRow));
+    sFields.append(card);
+    return;
+  }
+
+  // ---------- 穴埋めテストモード ----------
+  if (kind === "fill") {
+    const card = el("div");
+    card.className = "center-card";
+    fields.statement = makeTextarea(3);
+    fields.template = makeTextarea(5);
+    fields.answers = makeTextarea(3);
+    card.append(
+      labeled("問題文", fields.statement),
+      labeled("コード(空欄は ___ とアンダーバー3つで書く)", fields.template),
+      labeled("答え(空欄の順に、1行に1つ)", fields.answers)
+    );
+    sFields.append(card);
   }
 }
 
 function renderCriteria(container, candidates) {
   container.textContent = "";
-  if (!candidates.length) { container.textContent = "候補はありません。必要なら条件を手動追加してください。"; return; }
-  candidates.forEach(rule => {
-    const label = el("label"); label.className = "criteria-item";
-    const check = el("input"); check.type = "checkbox";
-    check.checked = fields.requirements.some(x => x.type === rule.type && x.name === rule.name);
+  if (!candidates.length) {
+    container.textContent = "候補はありません。必要なら条件を手動追加してください。";
+    return;
+  }
+  candidates.forEach((rule) => {
+    const label = el("label");
+    label.className = "criteria-item";
+    const check = el("input");
+    check.type = "checkbox";
+    check.checked = fields.requirements.some((x) => x.type === rule.type && x.name === rule.name);
     check.addEventListener("change", () => {
       if (check.checked) {
-        if (!fields.requirements.some(x => x.type === rule.type && x.name === rule.name)) fields.requirements.push(rule);
-      } else fields.requirements = fields.requirements.filter(x => !(x.type === rule.type && x.name === rule.name));
+        if (!fields.requirements.some((x) => x.type === rule.type && x.name === rule.name)) {
+          fields.requirements.push(rule);
+        }
+      } else {
+        fields.requirements = fields.requirements.filter(
+          (x) => !(x.type === rule.type && x.name === rule.name)
+        );
+      }
     });
-    label.append(check, " ", rule.type + ": " + rule.name); container.appendChild(label);
+    label.append(check, " ", rule.type + ": " + rule.name);
+    container.appendChild(label);
   });
 }
 
-function buildContent(kind) {
+async function buildContent(kind) {
   if (kind === "study") {
     const slides = fields.slideRows
       .map((r) => ({
@@ -548,7 +698,10 @@ function buildContent(kind) {
 
   if (kind === "fill") {
     const template = fields.template.value.trimEnd();
-    const blanks = fields.answers.value.split("\n").map((s) => s.trim()).filter((s) => s !== "");
+    const blanks = fields.answers.value
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s !== "");
     const blankCount = template.split("___").length - 1;
 
     if (blankCount === 0) throw new Error("コードに ___ の空欄がありません");
@@ -558,11 +711,36 @@ function buildContent(kind) {
     return { statement: statement, template: template, blanks: blanks };
   }
 
-  const tests = fields.testRows.map(r => ({ input: r.input.value.trimEnd(), expected: r.output }));
+  // 練習問題：未検証のテストケースがあれば保存時に自動で実行して期待値を確定する
   if (!fields.solution.value.trim()) throw new Error("正解例のPythonコードを入力してください");
-  if (tests.length === 0 || tests.some(t => t.expected === null)) throw new Error("先に正解例を実行して、すべてのテスト出力を生成してください");
-  return { statement, starter: fields.starter.value, solutionCode: fields.solution.value,
-    tests, requirements: fields.requirements || [] };
+  if (fields.testRows.length === 0) throw new Error("テストケースを1つ以上追加してください");
+
+  if (fields.testRows.some((t) => t.output === null)) {
+    if (!authorRunner) authorRunner = createRunner("python");
+    await authorRunner.whenReady();
+    for (const t of fields.testRows) {
+      if (t.output === null) {
+        const r = await authorRunner.run(fields.solution.value, t.input.value);
+        if (r.hasError || r.timedOut) {
+          throw new Error("正解例の実行エラー: " + (r.lines.join("\n") || "時間切れ"));
+        }
+        t.output = r.lines.join("\n").trim();
+      }
+    }
+  }
+
+  const tests = fields.testRows.map((r) => ({
+    input: r.input.value.trimEnd(),
+    expected: r.output,
+  }));
+
+  return {
+    statement,
+    starter: fields.starter.value,
+    solutionCode: fields.solution.value,
+    tests,
+    requirements: fields.requirements || [],
+  };
 }
 
 sKind.addEventListener("change", () => buildFields(sKind.value));
@@ -574,18 +752,19 @@ sAdd.addEventListener("click", async () => {
   const kind = sKind.value;
   let content = null;
 
+  sAdd.disabled = true;
   try {
-    if (title === "") throw new Error("ステージのタイトルを入力してください");
-    content = buildContent(kind);
+    if (title === "") throw new Error("ステージタイトルを入力してください");
+    content = await buildContent(kind);
   } catch (e) {
     sMessage.textContent = e.message;
+    sAdd.disabled = false;
     return;
   }
 
   const position =
     currentStages.length === 0 ? 1 : Math.max(...currentStages.map((s) => s.position)) + 1;
 
-  sAdd.disabled = true;
   const { error } = await db.from("stages").insert({
     quest_id: selectedQuest.id,
     position: position,
@@ -601,7 +780,7 @@ sAdd.addEventListener("click", async () => {
     return;
   }
 
-  sMessage.textContent = "追加しました";
+  sMessage.textContent = "ステージを追加しました";
   sTitle.value = "";
   buildFields(kind);
   loadStages();
